@@ -7,6 +7,8 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.2.0] - 2020-04-30
+
 ### Changed
 - Move to Go Modules
 - Use new Sensu SDK
