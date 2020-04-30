@@ -24,6 +24,8 @@ func TestParseEventKeyTags(t *testing.T) {
 	event := types.FixtureEvent("foo", "bar")
 	_, err := json.Marshal(event)
 	assert.NoError(t, err)
+	plugin.MessageTemplate = "{{.Entity.Name}}/{{.Check.Name}}"
+	plugin.MessageLimit = 100
 	title, tags := parseEventKeyTags(event)
 	assert.Contains(t, title, "foo")
 	assert.Contains(t, tags, "foo")
@@ -50,7 +52,7 @@ func TestParseAnnotations(t *testing.T) {
 			Output: "test output",
 		},
 	}
-	// annotations := "documentation,playbook"
+	plugin.Annotations = "documentation,playbook"
 	description := parseAnnotations(&event)
 	assert.Contains(t, description, "documentation")
 	assert.Contains(t, description, "playbook")
