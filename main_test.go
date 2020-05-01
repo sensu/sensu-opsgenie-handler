@@ -26,8 +26,9 @@ func TestParseEventKeyTags(t *testing.T) {
 	assert.NoError(t, err)
 	plugin.MessageTemplate = "{{.Entity.Name}}/{{.Check.Name}}"
 	plugin.MessageLimit = 100
-	title, tags := parseEventKeyTags(event)
+	title, alias, tags := parseEventKeyTags(event)
 	assert.Contains(t, title, "foo")
+	assert.Contains(t, alias, "foo")
 	assert.Contains(t, tags, "foo")
 }
 

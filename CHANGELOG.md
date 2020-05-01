@@ -7,6 +7,9 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+- Fixed alias to be set string entity name/check name, as opposed to matching message title
+
 ## [0.2.1] - 2020-04-30
 
 ### Changed

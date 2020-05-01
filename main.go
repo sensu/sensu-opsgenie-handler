@@ -128,16 +128,18 @@ func checkArgs(_ *types.Event) error {
 	return nil
 }
 
-// parseEventKeyTags func return string and []string with event data
-// string contains Entity.Name/Check.Name to use in message and alias
+// parseEventKeyTags func returns string, string, and []string with event data
+// fist string contains custom templte string to use in message
+// second string contains Entity.Name/Check.Name to use in alias
 // []string contains Entity.Name Check.Name Entity.Namespace, event.Entity.EntityClass to use as tags in Opsgenie
-func parseEventKeyTags(event *types.Event) (title string, tags []string) {
+func parseEventKeyTags(event *types.Event) (title string, alias string, tags []string) {
+	alias = fmt.Sprintf("%s/%s", event.Entity.Name, event.Check.Name)
 	title, err := resolveTemplate(plugin.MessageTemplate, event)
 	if err != nil {
-		return "", []string{}
+		return "", "", []string{}
 	}
 	tags = append(tags, event.Entity.Name, event.Check.Name, event.Entity.Namespace, event.Entity.EntityClass)
-	return trim(title, plugin.MessageLimit), tags
+	return trim(title, plugin.MessageLimit), alias, tags
 }
 
 // eventPriority func read priority in the event and return alerts.PX
@@ -256,11 +258,11 @@ func createIncident(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) e
 	teams := []alerts.TeamRecipient{
 		&alerts.Team{Name: plugin.Team},
 	}
-	title, tags := parseEventKeyTags(event)
+	title, alias, tags := parseEventKeyTags(event)
 
 	request := alerts.CreateAlertRequest{
 		Message:     title,
-		Alias:       title,
+		Alias:       alias,
 		Description: parseAnnotations(event),
 		Teams:       teams,
 		Entity:      event.Entity.Name,
@@ -281,10 +283,10 @@ func createIncident(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) e
 
 // getAlert func get a alert using an alias.
 func getAlert(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) (string, error) {
-	title, _ := parseEventKeyTags(event)
+	_, alias, _ := parseEventKeyTags(event)
 	response, err := alertCli.Get(alerts.GetAlertRequest{
 		Identifier: &alerts.Identifier{
-			Alias: title,
+			Alias: alias,
 		},
 	})
 
