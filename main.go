@@ -1,17 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
-	"text/template"
 
 	"github.com/opsgenie/opsgenie-go-sdk/alertsv2"
 	alerts "github.com/opsgenie/opsgenie-go-sdk/alertsv2"
 	ogcli "github.com/opsgenie/opsgenie-go-sdk/client"
 	"github.com/sensu-community/sensu-plugin-sdk/sensu"
+	"github.com/sensu-community/sensu-plugin-sdk/templates"
 	"github.com/sensu/sensu-go/types"
 )
 
@@ -30,11 +28,6 @@ type Config struct {
 	SensuDashboard  string
 	MessageTemplate string
 	MessageLimit    int
-}
-
-// used to handle getting text/template or html/template
-type templater interface {
-	Execute(wr io.Writer, data interface{}) error
 }
 
 var (
@@ -134,7 +127,7 @@ func checkArgs(_ *types.Event) error {
 // []string contains Entity.Name Check.Name Entity.Namespace, event.Entity.EntityClass to use as tags in Opsgenie
 func parseEventKeyTags(event *types.Event) (title string, alias string, tags []string) {
 	alias = fmt.Sprintf("%s/%s", event.Entity.Name, event.Check.Name)
-	title, err := resolveTemplate(plugin.MessageTemplate, event)
+	title, err := templates.EvalTemplate("title", plugin.MessageTemplate, event)
 	if err != nil {
 		return "", "", []string{}
 	}
@@ -327,28 +320,6 @@ func getNote(event *types.Event) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("Event data update:\n\n%s", eventJSON), nil
-}
-
-// resolveTemplate func resolves events in go templates
-func resolveTemplate(templateValue string, event *types.Event) (string, error) {
-	var (
-		resolved bytes.Buffer
-		tmpl     templater
-		err      error
-	)
-
-	tmpl, err = template.New("test").Parse(templateValue)
-
-	if err != nil {
-		return "", err
-	}
-
-	err = tmpl.Execute(&resolved, *event)
-	if err != nil {
-		return "", err
-	}
-
-	return resolved.String(), nil
 }
 
 // time func returns only the first n bytes of a string
