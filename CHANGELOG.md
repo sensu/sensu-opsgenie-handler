@@ -9,6 +9,7 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Change
 - Formatting cleanup and goreportcard badge
+- Use Sensu SDK templating engine
 
 ## [0.3.0] - 2020-05-01
 
