@@ -28,6 +28,7 @@ type Config struct {
 	SensuDashboard  string
 	MessageTemplate string
 	MessageLimit    int
+	IncludeEventInNote	bool
 }
 
 var (
@@ -102,6 +103,15 @@ var (
 			Default:   100,
 			Usage:     "The maximum length of the message field",
 			Value:     &plugin.MessageLimit,
+		},
+		{
+			Path:      "includeEventInNote",
+			Env:       "",
+			Argument:  "includeEventInNote",
+			Shorthand: "i",
+			Default:   false,
+			Usage:     "Include the event JSON in the payload sent to OpsGenie",
+			Value:     &plugin.IncludeEventInNote,
 		},
 	}
 )
@@ -243,9 +253,15 @@ func executeHandler(event *types.Event) error {
 
 // createIncident func create an alert in OpsGenie
 func createIncident(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) error {
-	note, err := getNote(event)
-	if err != nil {
-		return err
+	var (
+		note string
+		err error
+	)
+	if plugin.IncludeEventInNote {
+		note, err = getNote(event)
+		if err != nil {
+			return err
+		}
 	}
 
 	teams := []alerts.TeamRecipient{

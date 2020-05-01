@@ -7,6 +7,11 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.3.2] - 2020-05-01
+
+### Added
+- includeEventInNote bool flag to include JSON of event in Note, false by default
+
 ## [0.3.1] - 2020-05-01
 
 ### Change
