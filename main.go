@@ -29,7 +29,7 @@ type Config struct {
 	Annotations     string
 	SensuDashboard  string
 	MessageTemplate string
-	MessageLimit	int
+	MessageLimit    int
 }
 
 // used to handle getting text/template or html/template

@@ -7,6 +7,9 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Change
+- Formatting cleanup and goreportcard badge
+
 ## [0.3.0] - 2020-05-01
 
 ### Changed
