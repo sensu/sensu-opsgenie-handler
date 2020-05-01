@@ -60,12 +60,7 @@ Use "sensu-opsgenie-handler [command] --help" for more information about a comma
 
 To configure OpsGenie Sensu Integration follow these first part in [OpsGenie Docs][5].
 
-**Note 1:** Make sure to set the `OPSGENIE_AUTHTOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--auth` argument is provided as an override primarily for testing purposes. 
-
-**Note 2:** With the message being a template, be aware that OpsGenie uses that as the key
-for an event, if you include an item in the message template that may change (such as
-.Check.Output) between event creation and resolution, it could cause a mismatch and the
-event will not resolve.
+**Note:** Make sure to set the `OPSGENIE_AUTHTOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--auth` argument is provided as an override primarily for testing purposes. 
 
 #### To use Opsgenie Priority
 
