@@ -97,10 +97,6 @@ Or inside check:
 }
 ```
 
-#### To parse any annotation
-
-With this new feature you can include any annotation field in message to show inside OpsGenie alert. By default they will look for documentation and playbook. 
-
 ## Configuration
 ### Sensu Go
 #### Asset registration
