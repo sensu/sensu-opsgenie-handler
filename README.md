@@ -46,15 +46,16 @@ Available Commands:
   version     Print the version number of this plugin
 
 Flags:
-  -a, --auth string              The OpsGenie V2 API authentication token, use default from OPSGENIE_AUTHTOKEN env var
-  -h, --help                     help for sensu-opsgenie-handler
-  -l, --messageLimit int         The maximum length of the message field (default 100)
-  -i, --includeEventInNote       Include the event JSON in the payload sent to OpsGenie
-  -m, --messageTemplate string   The template for the message to be sent (default "{{.Entity.Name}}/{{.Check.Name}}")
-  -s, --sensuDashboard string    The OpsGenie Handler will use it to create a source Sensu Dashboard URL. Use OPSGENIE_SENSU_DASHBOARD. Example: http://sensu-dashboard.example.local/c/~/n (default "disabled")
-  -t, --team string              The OpsGenie V2 API Team, use default from OPSGENIE_TEAM env var
-  -u, --url string               The OpsGenie V2 API URL, use default from OPSGENIE_APIURL env var (default "https://api.opsgenie.com")
-  -w, --withAnnotations string   The OpsGenie Handler will parse check and entity annotations with these values. Use OPSGENIE_ANNOTATIONS env var with commas, like: documentation,playbook (default "documentation,playbook")
+  -a, --auth string                  The OpsGenie V2 API authentication token, use default from OPSGENIE_AUTHTOKEN env var
+  -h, --help                         help for sensu-opsgenie-handler
+  -i, --includeEventInNote           Include the event JSON in the payload sent to OpsGenie
+  -m, --messageTemplate string       The template for the message to be sent (default "{{.Entity.Name}}/{{.Check.Name}}")
+  -l, --messageLimit int             The maximum length of the message field (default 100)
+  -d, --descriptionTemplate string   The template for the description to be sent (default "{{.Check.Output}}")
+  -L, --descriptionLimit int         The maximum length of the description field (default 100)
+  -s, --sensuDashboard string        The OpsGenie Handler will use it to create a source Sensu Dashboard URL. Use OPSGENIE_SENSU_DASHBOARD. Example: http://sensu-dashboard.example.local/c/~/n (default "disabled")
+  -t, --team string                  The OpsGenie V2 API Team, use default from OPSGENIE_TEAM env var
+  -u, --url string                   The OpsGenie V2 API URL, use default from OPSGENIE_APIURL env var (default "https://api.opsgenie.com")
 
 Use "sensu-opsgenie-handler [command] --help" for more information about a command.
 

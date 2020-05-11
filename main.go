@@ -21,14 +21,16 @@ const (
 // Config represents the handler plugin config.
 type Config struct {
 	sensu.PluginConfig
-	APIURL          string
-	AuthToken       string
-	Team            string
-	Annotations     string
-	SensuDashboard  string
-	MessageTemplate string
-	MessageLimit    int
-	IncludeEventInNote	bool
+	APIURL              string
+	AuthToken           string
+	Team                string
+	Annotations         string
+	SensuDashboard      string
+	MessageTemplate     string
+	MessageLimit        int
+	DescriptionTemplate string
+	DescriptionLimit    int
+	IncludeEventInNote  bool
 }
 
 var (
@@ -105,6 +107,24 @@ var (
 			Value:     &plugin.MessageLimit,
 		},
 		{
+			Path:      "descriptionTemplate",
+			Env:       "OPSGENIE_DESCRIPTION_TEMPLATE",
+			Argument:  "descriptionTemplate",
+			Shorthand: "d",
+			Default:   "{{.Check.Output}}",
+			Usage:     "The template for the description to be sent",
+			Value:     &plugin.DescriptionTemplate,
+		},
+		{
+			Path:      "descriptionLimit",
+			Env:       "OPSGENIE_DESCRIPTION_LIMIT",
+			Argument:  "descriptionLimit",
+			Shorthand: "L",
+			Default:   100,
+			Usage:     "The maximum length of the description field",
+			Value:     &plugin.DescriptionLimit,
+		},
+		{
 			Path:      "includeEventInNote",
 			Env:       "",
 			Argument:  "includeEventInNote",
@@ -143,6 +163,15 @@ func parseEventKeyTags(event *types.Event) (title string, alias string, tags []s
 	}
 	tags = append(tags, event.Entity.Name, event.Check.Name, event.Entity.Namespace, event.Entity.EntityClass)
 	return trim(title, plugin.MessageLimit), alias, tags
+}
+
+// parseDescription func returns string with custom template string to use in description
+func parseDescription(event *types.Event) (description string) {
+	description, err := templates.EvalTemplate("description", plugin.DescriptionTemplate, event)
+	if err != nil {
+		return ""
+	}
+	return trim(description, plugin.DescriptionLimit)
 }
 
 // eventPriority func read priority in the event and return alerts.PX
@@ -206,31 +235,6 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
-// parseAnnotations func try to find a predeterminated keys
-func parseAnnotations(event *types.Event) string {
-	var output string
-	tags := strings.Split(plugin.Annotations, ",")
-	if event.Check.Annotations != nil {
-		for key, value := range event.Check.Annotations {
-			if stringInSlice(key, tags) {
-				output += fmt.Sprintf("%s: %s \n", key, value)
-			}
-		}
-	}
-	if event.Entity.Annotations != nil {
-		for key, value := range event.Entity.Annotations {
-			if stringInSlice(key, tags) {
-				output += fmt.Sprintf("%s: %s \n", key, value)
-			}
-		}
-	}
-	if plugin.SensuDashboard != "disabled" {
-		output += fmt.Sprintf("source: %s/%s/events/%s/%s \n", plugin.SensuDashboard, event.Entity.Namespace, event.Entity.Name, event.Check.Name)
-	}
-	output += fmt.Sprintf("check output: %s", event.Check.Output)
-	return output
-}
-
 func executeHandler(event *types.Event) error {
 	// starting client instance
 	cli := new(ogcli.OpsGenieClient)
@@ -255,7 +259,7 @@ func executeHandler(event *types.Event) error {
 func createIncident(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) error {
 	var (
 		note string
-		err error
+		err  error
 	)
 	if plugin.IncludeEventInNote {
 		note, err = getNote(event)
@@ -272,7 +276,7 @@ func createIncident(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) e
 	request := alerts.CreateAlertRequest{
 		Message:     title,
 		Alias:       alias,
-		Description: parseAnnotations(event),
+		Description: parseDescription(event),
 		Teams:       teams,
 		Entity:      event.Entity.Name,
 		Source:      source,
