@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 list="event
-event.withAnnotations
 event_with_opsgenie_priority.check
 event_with_opsgenie_priority"
 

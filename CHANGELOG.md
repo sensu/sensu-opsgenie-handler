@@ -7,6 +7,14 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.4.0] - 2020-05-11
+
+### Removed
+- withAnnotations flags and its code to create description field
+
+### Added
+- descriptionTemplate and descriptionLimit flags to allow customizing the description field
+
 ## [0.3.2] - 2020-05-01
 
 ### Added

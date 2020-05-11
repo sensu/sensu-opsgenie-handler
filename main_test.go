@@ -32,32 +32,15 @@ func TestParseEventKeyTags(t *testing.T) {
 	assert.Contains(t, tags, "foo")
 }
 
-func TestParseAnnotations(t *testing.T) {
-	event := v2.Event{
-		Entity: &v2.Entity{
-			ObjectMeta: v2.ObjectMeta{
-				Name:      "test",
-				Namespace: "default",
-				Annotations: map[string]string{
-					"documentation": "no-docs",
-				},
-			},
-		},
-		Check: &v2.Check{
-			ObjectMeta: v2.ObjectMeta{
-				Name: "test-check",
-				Annotations: map[string]string{
-					"playbook": "no-playbook",
-				},
-			},
-			Output: "test output",
-		},
-	}
-	plugin.Annotations = "documentation,playbook"
-	description := parseAnnotations(&event)
-	assert.Contains(t, description, "documentation")
-	assert.Contains(t, description, "playbook")
-
+func TestParseDescription(t *testing.T) {
+	event := types.FixtureEvent("foo", "bar")
+	event.Check.Output = "Check OK"
+	_, err := json.Marshal(event)
+	assert.NoError(t, err)
+	plugin.DescriptionTemplate = "{{.Check.Output}}"
+	plugin.DescriptionLimit = 100
+	description := parseDescription(event)
+	assert.Contains(t, description, "Check OK")
 }
 
 func TestEventPriority(t *testing.T) {
