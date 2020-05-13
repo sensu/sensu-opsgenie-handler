@@ -128,7 +128,7 @@ If you're using an earlier version of sensuctl, you can find the asset on the [B
         "env_vars": [
           "OPSGENIE_AUTHTOKEN=SECRET",
           "OPSGENIE_TEAM=TEAM_NAME",
-          "OPSGENIE_APIURL=https://api.eu.opsgenie.com"
+          "OPSGENIE_APIURL=https://api.opsgenie.com"
         ],
         "timeout": 10,
         "filters": [
@@ -168,7 +168,7 @@ either a complete URL or a "host[:port]", in which case the "http" scheme is ass
 The easiest way to get this handler added to your Sensu environment, is to add it as an asset from Bonsai:
 
 ```sh
-sensuctl asset add betorvs/sensu-opsgenie-handler --rename sensu-opsgenie-handler
+sensuctl asset add nixwiz/sensu-opsgenie-handler --rename sensu-opsgenie-handler
 ```
 
 See `sensuctl asset --help` for details on how to specify version.
@@ -200,7 +200,7 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 [1]: https://github.com/sensu/sensu-go
 [2]: https://www.opsgenie.com/ 
 [3]: https://docs.sensu.io/sensu-go/5.0/reference/handlers/#how-do-sensu-handlers-work
-[4]: https://github.com/betorvs/sensu-opsgenie-handler/releases
+[4]: https://github.com/nixwiz/sensu-opsgenie-handler/releases
 [5]: https://docs.opsgenie.com/docs/sensu-integration#section-add-sensu-integration-in-opsgenie
 [6]: https://github.com/sensu/sensu-pagerduty-handler
 [7]: https://docs.sensu.io/sensu-go/latest/reference/assets/
