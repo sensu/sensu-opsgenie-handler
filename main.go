@@ -15,7 +15,7 @@ import (
 
 const (
 	notFound = "NOT FOUND"
-	source   = "sensuGo"
+	source   = "Sensu Go"
 )
 
 // Config represents the handler plugin config.
@@ -171,13 +171,33 @@ func parseDescription(event *types.Event) (description string) {
 	if err != nil {
 		return ""
 	}
+	// allow newlines to get expanded
+	description = strings.Replace(description, `\n`, "\n", -1)
 	return trim(description, plugin.DescriptionLimit)
+}
+
+// parseDetails func returns a map of string string with check information for the details field
+func parseDetails(event *types.Event) map[string]string {
+	details := make(map[string]string)
+	details["output"] = event.Check.Output
+	details["command"] = event.Check.Command
+	details["proxy_entity_name"] = event.Check.ProxyEntityName
+	details["state"] = event.Check.State
+	details["status"] = fmt.Sprintf("%d", event.Check.Status)
+	details["ttl"] = fmt.Sprintf("%d", event.Check.Ttl)
+	details["interval"] = fmt.Sprintf("%d", event.Check.Interval)
+	details["occurrences"] = fmt.Sprintf("%d", event.Check.Occurrences)
+	details["occurrences_watermark"] = fmt.Sprintf("%d", event.Check.OccurrencesWatermark)
+	details["subscriptions"] = fmt.Sprintf("%v", event.Check.Subscriptions)
+	details["handlers"] = fmt.Sprintf("%v", event.Check.Handlers)
+
+	return details
 }
 
 // eventPriority func read priority in the event and return alerts.PX
 // check.Annotations override Entity.Annotations
 func eventPriority(event *types.Event) alertsv2.Priority {
-	if event.Check.Annotations != nil {
+	if event.Check.Annotations != nil && len(event.Check.Annotations["opsgenie_priority"]) > 0 {
 		switch event.Check.Annotations["opsgenie_priority"] {
 		case "P5":
 			return alerts.P5
@@ -198,7 +218,7 @@ func eventPriority(event *types.Event) alertsv2.Priority {
 			return alerts.P3
 
 		}
-	} else if event.Entity.Annotations != nil {
+	} else if event.Entity.Annotations != nil && len(event.Entity.Annotations["opsgenie_priority"]) > 0 {
 		switch event.Entity.Annotations["opsgenie_priority"] {
 		case "P5":
 			return alerts.P5
@@ -277,6 +297,7 @@ func createIncident(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) e
 		Message:     title,
 		Alias:       alias,
 		Description: parseDescription(event),
+		Details:     parseDetails(event),
 		Teams:       teams,
 		Entity:      event.Entity.Name,
 		Source:      source,
