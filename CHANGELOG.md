@@ -7,8 +7,15 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+- Details field for parity with Sensu Enterprise handler
+- Expansion of embedded \n newlines in description
+- More test coverage
+
 ### Changed
 - Minor README fixes
+- Changed source from "sensuGo" to "Sensu Go"
+- Fixed bug where evenPriority annotations weren't being checked correctly
 
 ## [0.4.1] - 2020-05-11
 
