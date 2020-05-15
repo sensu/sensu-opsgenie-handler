@@ -7,6 +7,9 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+- Updated README to reference secrets, add environment variables, and other cleanup
+
 ## [0.5.0] - 2020-05-14
 
 ### Added
