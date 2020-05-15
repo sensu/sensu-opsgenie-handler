@@ -7,6 +7,8 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.6.0] - 2020-05-15
+
 ### Changed
 - Updated README to reference secrets, add environment variables, and other cleanup
 - Fixed Priority annotations to properly reflect entity annotations precedence over check annotations
