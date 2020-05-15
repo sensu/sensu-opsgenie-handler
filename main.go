@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opsgenie/opsgenie-go-sdk/alertsv2"
 	alerts "github.com/opsgenie/opsgenie-go-sdk/alertsv2"
 	ogcli "github.com/opsgenie/opsgenie-go-sdk/client"
 	"github.com/sensu-community/sensu-plugin-sdk/sensu"
@@ -186,7 +185,7 @@ func parseDetails(event *types.Event) map[string]string {
 
 // eventPriority func read priority in the event and return alerts.PX
 // check.Annotations override Entity.Annotations
-func eventPriority(event *types.Event) alertsv2.Priority {
+func eventPriority(event *types.Event) alerts.Priority {
 	if event.Entity.Annotations != nil && len(event.Entity.Annotations["opsgenie_priority"]) > 0 {
 		switch event.Entity.Annotations["opsgenie_priority"] {
 		case "P5":
