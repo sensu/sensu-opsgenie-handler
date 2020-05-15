@@ -13,10 +13,10 @@
 - [Configuration](#configuration)
   - [Asset registration](#asset-registration)
   - [Handler definition](#handler-definition)
+  - [Environment Variables](#environment-variables)
   - [Argument Annotations](#argument-annotations)
   - [Proxy support](#proxy-support)
 - [Installation from source](#installation-from-source)
-- [Additional notes](#additional-notes)
 - [Contributing](#contributing)
 
 ## Overview
@@ -63,8 +63,6 @@ Use "sensu-opsgenie-handler [command] --help" for more information about a comma
 
 To configure OpsGenie Sensu Integration follow these first part in [OpsGenie Docs][5].
 
-**Note:** Make sure to set the `OPSGENIE_AUTHTOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--auth` argument is provided as an override primarily for testing purposes. 
-
 #### To use Opsgenie Priority
 
 Please add this annotations inside sensu-agent:
@@ -75,26 +73,24 @@ annotations:
 ```
 
 Or inside check:
-```sh
-{
-  "type": "CheckConfig",
-  "api_version": "core/v2",
-  "metadata": {
-    "name": "interval_check",
-    "namespace": "default",
-    "annotations": {
-        "opsgenie_priority": "P2",
-        "documentation": "https://docs.sensu.io/sensu-go/latest"
-    }
-  },
-  "spec": {
-    "command": "check-cpu.sh -w 75 -c 90",
-    "subscriptions": ["system"],
-    "handlers": ["opsgenie"],
-    "interval": 60,
-    "publish": true
-  }
-}
+```yml
+---
+type: CheckConfig
+api_version: core/v2
+metadata:
+  name: interval_check
+  namespace: default
+  annotations:
+    opsgenie_priority: P2
+    documentation": https://docs.sensu.io/sensu-go/latest
+spec:
+  command: check-cpu.sh -w 75 -c 90
+  subscriptions:
+  - system
+  handlers:
+  - opsgenie
+  interval: 60
+  publish: true
 ```
 
 ## Configuration
@@ -114,28 +110,60 @@ If you're using an earlier version of sensuctl, you can find the asset on the [B
 
 #### Handler definition
 
-```json
-{
-    "api_version": "core/v2",
-    "type": "Handler",
-    "metadata": {
-        "namespace": "default",
-        "name": "opsgenie"
-    },
-    "spec": {
-        "type": "pipe",
-        "command": "sensu-opsgenie-handler",
-        "env_vars": [
-          "OPSGENIE_AUTHTOKEN=SECRET",
-          "OPSGENIE_TEAM=TEAM_NAME",
-          "OPSGENIE_APIURL=https://api.opsgenie.com"
-        ],
-        "timeout": 10,
-        "filters": [
-            "is_incident"
-        ]
-    }
-}
+```yml
+type: Handler
+api_version: core/v2
+metadata:
+  name: opsgenie
+  namespace: default
+spec:
+  type: pipe
+  command: sensu-opsgenie-handler
+  env_vars:
+  - OPSGENIE_TEAM=TEAM_NAME
+  - OPSGENIE_APIURL=https://api.opsgenie.com
+  timeout: 10
+  runtime_assets:
+  - nixwiz/sensu-opsgenie-handler
+  filters:
+  - is_incident
+  secrets:
+  - name: OPSGENIE_AUTHTOKEN
+    secret: opgsgenie_authtoken
+```
+
+### Environment Variables
+
+Most arguments for this handler are available to be set via environment variables.  However, any
+arguments specified directly on the command line override the corresponding environment variable.
+
+|Argument             |Environment Variable         |
+|---------------------|-----------------------------|
+|--url                |OPSGENIE_APIURL              |
+|--auth               |OPSGENIE_AUTHTOKEN           |
+|--team               |OPSGENIE_TEAM                |
+|--withAnnotations    |OPSGENIE_ANNOTATIONS         |
+|--sensuDashboard     |OPSGENIE_SENSU_DASHBOARD     |
+|--messageTemplate    |OPSGENIE_MESSAGE_TEMPLATE    |
+|--messageLimit       |OPSGENIE_MESSAGE_LIMIT       |
+|--descriptionTemplate|OPSGENIE_DESCRIPTION_TEMPLATE|
+|--descriptionLimit   |OPSGENIE_DESCRIPTION_LIMIT   |
+
+**Security Note:** Care should be taken to not expose the auth token for this handler by specifying it
+on the command line or by directly setting the environment variable in the handler definition.  It is
+suggested to make use of [secrets management][10] to surface it as an environment variable.  The
+handler definition above references it as a secret.  Below is an example secrets definition that make
+use of the built-in [env secrets provider][11].
+
+```yml
+---
+type: Secret
+api_version: secrets/v1
+metadata:
+  name: opsgenie_authtoken
+spec:
+  provider: env
+  id: OPSGENIE_AUTHTOKEN
 ```
 
 ### Argument Annotations
@@ -162,22 +190,6 @@ This handler supports the use of the environment variables HTTP_PROXY,
 HTTPS_PROXY, and NO_PROXY (or the lowercase versions thereof). HTTPS_PROXY takes
 precedence over HTTP_PROXY for https requests.  The environment values may be
 either a complete URL or a "host[:port]", in which case the "http" scheme is assumed.
-
-### Asset creation
-
-The easiest way to get this handler added to your Sensu environment, is to add it as an asset from Bonsai:
-
-```sh
-sensuctl asset add nixwiz/sensu-opsgenie-handler --rename sensu-opsgenie-handler
-```
-
-See `sensuctl asset --help` for details on how to specify version.
-
-Another option is to manually register the asset by providing a URL to the tar.gz file, and sha512 hash for that file: 
-
-```sh
-sensuctl asset create sensu-opsgenie-handler --url "https://assets.bonsai.sensu.io/fba8c41f2b5bc817f8fb201144627042a3e31ee3/sensu-opsgenie-handler_0.0.4_linux_amd64.tar.gz" --sha512 "5eda4b31371fae83860604dedbf8527d0d6919bfae8e4f5b33f71bd314f6d706ef80356b14f11d7d2f86923df722338a3d11b84fa1e35323959120b46b738487"
-```
 
 ### Sensu Core
 
@@ -206,3 +218,5 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 [7]: https://docs.sensu.io/sensu-go/latest/reference/assets/
 [8]: https://bonsai.sensu.io/
 [9]: https://github.com/sensu-plugins/sensu-plugins-opsgenie
+[10]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/
+[11]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/#use-env-for-secrets-management
