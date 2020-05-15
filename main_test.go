@@ -57,15 +57,16 @@ func TestParseDetails(t *testing.T) {
 
 func TestEventPriority(t *testing.T) {
 	testcases := []struct {
-		myPriority     string
-		alertsPriority alerts.Priority
+		myPriority         string
+		mismatchedPriority string
+		alertsPriority     alerts.Priority
 	}{
-		{"P1", alerts.P1},
-		{"P2", alerts.P2},
-		{"P3", alerts.P3},
-		{"P4", alerts.P4},
-		{"P5", alerts.P5},
-		{"Default", alerts.P3},
+		{"P1", "P2", alerts.P1},
+		{"P2", "P3", alerts.P2},
+		{"P3", "P4", alerts.P3},
+		{"P4", "P5", alerts.P4},
+		{"P5", "P1", alerts.P5},
+		{"Default", "P4", alerts.P3},
 	}
 
 	for _, tc := range testcases {
@@ -78,6 +79,8 @@ func TestEventPriority(t *testing.T) {
 	}
 
 	// The FixtureEntity in FixtureEvent lacks Annotations, hand roll event
+	// Set the check priority to mismatch, and ensure that entity priortity
+	// takes precedence
 	for _, tc := range testcases {
 		assert := assert.New(t)
 		event := types.Event{
@@ -92,7 +95,11 @@ func TestEventPriority(t *testing.T) {
 			},
 			Check: &types.Check{
 				ObjectMeta: types.ObjectMeta{
-					Name: "test-check",
+					Name:      "test-check",
+					Namespace: "default",
+					Annotations: map[string]string{
+						"opsgenie_priority": tc.mismatchedPriority,
+					},
 				},
 				Output: "test output",
 			},

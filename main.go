@@ -24,7 +24,6 @@ type Config struct {
 	APIURL              string
 	AuthToken           string
 	Team                string
-	Annotations         string
 	SensuDashboard      string
 	MessageTemplate     string
 	MessageLimit        int
@@ -69,15 +68,6 @@ var (
 			Default:   "",
 			Usage:     "The OpsGenie V2 API Team, use default from OPSGENIE_TEAM env var",
 			Value:     &plugin.Team,
-		},
-		{
-			Path:      "withAnnotations",
-			Env:       "OPSGENIE_ANNOTATIONS",
-			Argument:  "withAnnotations",
-			Shorthand: "w",
-			Default:   "documentation,playbook",
-			Usage:     "The OpsGenie Handler will parse check and entity annotations with these values. Use OPSGENIE_ANNOTATIONS env var with commas, like: documentation,playbook",
-			Value:     &plugin.Annotations,
 		},
 		{
 			Path:      "sensuDashboard",
@@ -197,6 +187,28 @@ func parseDetails(event *types.Event) map[string]string {
 // eventPriority func read priority in the event and return alerts.PX
 // check.Annotations override Entity.Annotations
 func eventPriority(event *types.Event) alertsv2.Priority {
+	if event.Entity.Annotations != nil && len(event.Entity.Annotations["opsgenie_priority"]) > 0 {
+		switch event.Entity.Annotations["opsgenie_priority"] {
+		case "P5":
+			return alerts.P5
+
+		case "P4":
+			return alerts.P4
+
+		case "P3":
+			return alerts.P3
+
+		case "P2":
+			return alerts.P2
+
+		case "P1":
+			return alerts.P1
+
+		default:
+			return alerts.P3
+
+		}
+	}
 	if event.Check.Annotations != nil && len(event.Check.Annotations["opsgenie_priority"]) > 0 {
 		switch event.Check.Annotations["opsgenie_priority"] {
 		case "P5":
@@ -218,31 +230,9 @@ func eventPriority(event *types.Event) alertsv2.Priority {
 			return alerts.P3
 
 		}
-	} else if event.Entity.Annotations != nil && len(event.Entity.Annotations["opsgenie_priority"]) > 0 {
-		switch event.Entity.Annotations["opsgenie_priority"] {
-		case "P5":
-			return alerts.P5
-
-		case "P4":
-			return alerts.P4
-
-		case "P3":
-			return alerts.P3
-
-		case "P2":
-			return alerts.P2
-
-		case "P1":
-			return alerts.P1
-
-		default:
-			return alerts.P3
-
-		}
-	} else {
-		return alerts.P3
 	}
 
+	return alerts.P3
 }
 
 // stringInSlice checks if a slice contains a specific string
