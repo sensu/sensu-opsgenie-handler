@@ -6,7 +6,12 @@ and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [0.6.1] - 2020-07-02
+
 ### Changed
+- Increased the default description limit to 15000, matching OpsGenie published limit
+- Increased the default message limit to 130, matching OpsGenie published limit
 - Clened up a duplicate import of github.com/opsgenie/opsgenie-go-sdk/alertsv
 
 ## [0.6.0] - 2020-05-15
