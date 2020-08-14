@@ -56,6 +56,7 @@ var (
 			Argument:  "auth",
 			Shorthand: "a",
 			Default:   "",
+			Secret:    true,
 			Usage:     "The OpsGenie V2 API authentication token, use default from OPSGENIE_AUTHTOKEN env var",
 			Value:     &plugin.AuthToken,
 		},
