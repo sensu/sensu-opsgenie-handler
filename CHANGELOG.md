@@ -9,8 +9,19 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - Minor README fixes
-- Updated SDK to 0.10.1
+- Updated SDK to 0.11.0
 - Updated module dependencies
+
+### Updates brought in from [upstream](https://github.com/betorvs/sensu-opsgenie-handler)
+- Removed flag `OPSGENIE_APIURL` now we use constants from opsgenie sdk-v2.
+- Removed `opsgenie_priority` annotation. Should use: `"sensu.io/plugins/sensu-opsgenie-handler/config/priority": "P3"`.
+- Added flag `--region` to choose opsgenie region. Can be configured using environment variable too `OPSGENIE_REGION`. This feature replaces old `OPSGENIE_APIURL`.
+- Added flag `--priority` to change Opsgenie default priority. String field. Expected: "P1", "P2", "P3", "P4" and "P5".
+- Changed opsgenie sdk to [v2](https://github.com/opsgenie/opsgenie-go-sdk-v2).
+- Changed withAnnotations to parse all annotations, and exclude if it contains `sensu.io/plugins/sensu-opsgenie-handler/config`, to send to Opsgenie.
+- Added more tests
+- Added `--allowLabels` to parse all Labels and send to Opsgenie.
+- Added `--fullDetails` to add all kind of details in Opsgenie (changed from the upstream based on my opinions).
 
 ## [0.7.0] - 2020-08-14
 
