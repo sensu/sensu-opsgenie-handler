@@ -69,15 +69,15 @@ To configure OpsGenie Sensu Integration follow these first part in [OpsGenie Doc
 
 #### To use Opsgenie Priority
 
-You can use the `--priority` command-line option to specify a default priority and then use check
-and/or entity annotations to override this default on a per-check or per-entity basis.  See
-[Argument Annotations](#Argument-annotations) for more information.
+Use the `--priority` command-line option to specify a default priority and then use check and/or
+entity annotations to override the default on a per-check or per-entity basis.  See
+[Argument Annotations](#argument-annotations) for more information.
 
 #### To use alert actions
 
 Use the `--actions` command-line option to specify alert actions to be triggered by an event.  The
 argument for this option is a comma separated list of actions.  Use check and/or entity annotations
-to set this option on a per-check or per-entity basis.  See [Argument Annotations](#Argument-annotations)
+to set this option on a per-check or per-entity basis.  See [Argument Annotations](#argument-annotations)
 for more information.
 
 ## Configuration
