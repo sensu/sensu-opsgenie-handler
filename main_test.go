@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	alerts "github.com/opsgenie/opsgenie-go-sdk/alertsv2"
+	"github.com/opsgenie/opsgenie-go-sdk-v2/alert"
+	"github.com/opsgenie/opsgenie-go-sdk-v2/client"
 	"github.com/sensu/sensu-go/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -59,61 +60,23 @@ func TestEventPriority(t *testing.T) {
 	testcases := []struct {
 		myPriority         string
 		mismatchedPriority string
-		alertsPriority     alerts.Priority
+		alertsPriority     alert.Priority
 	}{
-		{"P1", "P2", alerts.P1},
-		{"P2", "P3", alerts.P2},
-		{"P3", "P4", alerts.P3},
-		{"P4", "P5", alerts.P4},
-		{"P5", "P1", alerts.P5},
-		{"Default", "P4", alerts.P3},
+		{"P1", "P2", alert.P1},
+		{"P2", "P3", alert.P2},
+		{"P3", "P4", alert.P3},
+		{"P4", "P5", alert.P4},
+		{"P5", "P1", alert.P5},
+		{"Default", "P4", alert.P3},
 	}
 
 	for _, tc := range testcases {
 		assert := assert.New(t)
-		event := types.FixtureEvent("foo", "bar")
-		event.Check.Annotations["opsgenie_priority"] = tc.myPriority
-		priority := eventPriority(event)
+		plugin.Priority = tc.myPriority
+		priority := eventPriority()
 		expectedValue := tc.alertsPriority
 		assert.Equal(priority, expectedValue)
 	}
-
-	// The FixtureEntity in FixtureEvent lacks Annotations, hand roll event
-	// Set the check priority to mismatch, and ensure that entity priortity
-	// takes precedence
-	for _, tc := range testcases {
-		assert := assert.New(t)
-		event := types.Event{
-			Entity: &types.Entity{
-				ObjectMeta: types.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-					Annotations: map[string]string{
-						"opsgenie_priority": tc.myPriority,
-					},
-				},
-			},
-			Check: &types.Check{
-				ObjectMeta: types.ObjectMeta{
-					Name:      "test-check",
-					Namespace: "default",
-					Annotations: map[string]string{
-						"opsgenie_priority": tc.mismatchedPriority,
-					},
-				},
-				Output: "test output",
-			},
-		}
-		priority := eventPriority(&event)
-		expectedValue := tc.alertsPriority
-		assert.Equal(priority, expectedValue)
-	}
-
-	assert := assert.New(t)
-	event := types.FixtureEvent("foo", "bar")
-	priority := eventPriority(event)
-	expectedValue := alerts.P3
-	assert.Equal(priority, expectedValue)
 }
 
 func TestCheckArgs(t *testing.T) {
@@ -141,3 +104,25 @@ func TestTrim(t *testing.T) {
 	assert.Equal(t, trim(testString, 40), testString)
 	assert.Equal(t, trim(testString, 4), "This")
 }
+
+func TestSwitchOpsgenieRegion(t *testing.T) {
+        expectedValueUS := client.API_URL
+        expectedValueEU := client.API_URL_EU
+
+        testUS := switchOpsgenieRegion()
+
+        assert.Equal(t, testUS, expectedValueUS)
+
+        plugin.APIRegion = "eu"
+
+        testEU := switchOpsgenieRegion()
+
+        assert.Equal(t, testEU, expectedValueEU)
+
+        plugin.APIRegion = "EU"
+
+        testEU2 := switchOpsgenieRegion()
+
+        assert.Equal(t, testEU2, expectedValueEU)
+}
+

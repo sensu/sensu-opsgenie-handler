@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
-	alerts "github.com/opsgenie/opsgenie-go-sdk/alertsv2"
-	ogcli "github.com/opsgenie/opsgenie-go-sdk/client"
+	"github.com/opsgenie/opsgenie-go-sdk-v2/alert"
+	"github.com/opsgenie/opsgenie-go-sdk-v2/client"
 	"github.com/sensu-community/sensu-plugin-sdk/sensu"
 	"github.com/sensu-community/sensu-plugin-sdk/templates"
 	"github.com/sensu/sensu-go/types"
@@ -20,15 +22,20 @@ const (
 // Config represents the handler plugin config.
 type Config struct {
 	sensu.PluginConfig
-	APIURL              string
+	IncludeEventInNote  bool
+	FullDetails         bool
+	WithAnnotations     bool
+	WithLabels          bool
+	MessageLimit        int
+	DescriptionLimit    int
+	APIRegion           string
 	AuthToken           string
 	Team                string
+	Priority            string
 	SensuDashboard      string
 	MessageTemplate     string
-	MessageLimit        int
 	DescriptionTemplate string
-	DescriptionLimit    int
-	IncludeEventInNote  bool
+	Actions             []string
 }
 
 var (
@@ -42,13 +49,13 @@ var (
 
 	options = []*sensu.PluginConfigOption{
 		{
-			Path:      "url",
-			Env:       "OPSGENIE_APIURL",
-			Argument:  "url",
-			Shorthand: "u",
-			Default:   "https://api.opsgenie.com",
-			Usage:     "The OpsGenie V2 API URL, use default from OPSGENIE_APIURL env var",
-			Value:     &plugin.APIURL,
+			Path:      "region",
+			Env:       "OPSGENIE_REGION",
+			Argument:  "region",
+			Shorthand: "r",
+			Default:   "us",
+			Usage:     "The OpsGenie API Region (us or eu), use default from OPSGENIE_REGION env var",
+			Value:     &plugin.APIRegion,
 		},
 		{
 			Path:      "auth",
@@ -74,7 +81,7 @@ var (
 			Env:       "OPSGENIE_SENSU_DASHBOARD",
 			Argument:  "sensuDashboard",
 			Shorthand: "s",
-			Default:   "disabled",
+			Default:   "",
 			Usage:     "The OpsGenie Handler will use it to create a source Sensu Dashboard URL. Use OPSGENIE_SENSU_DASHBOARD. Example: http://sensu-dashboard.example.local/c/~/n",
 			Value:     &plugin.SensuDashboard,
 		},
@@ -123,6 +130,51 @@ var (
 			Usage:     "Include the event JSON in the payload sent to OpsGenie",
 			Value:     &plugin.IncludeEventInNote,
 		},
+		{
+			Path:      "priority",
+			Env:       "OPSGENIE_PRIORITY",
+			Argument:  "priority",
+			Shorthand: "p",
+			Default:   "P3",
+			Usage:     "The OpsGenie Alert Priority, use default from OPSGENIE_PRIORITY env var",
+			Value:     &plugin.Priority,
+		},
+		{
+			Path:      "actions",
+			Env:       "",
+			Argument:  "actions",
+			Shorthand: "A",
+			Default:   []string{},
+			Usage:     "The OpsGenie custom actions to assign to the event",
+			Value:     &plugin.Actions,
+		},
+		{
+                        Path:      "withAnnotations",
+                        Env:       "",
+                        Argument:  "withAnnotations",
+                        Shorthand: "w",
+                        Default:   false,
+                        Usage:     "Include the event.metadata.Annotations in details to send to OpsGenie",
+                        Value:     &plugin.WithAnnotations,
+                },
+                {
+                        Path:      "withLabels",
+                        Env:       "",
+                        Argument:  "withLabels",
+                        Shorthand: "W",
+                        Default:   false,
+                        Usage:     "Include the event.metadata.Labels in details to send to OpsGenie",
+                        Value:     &plugin.WithLabels,
+                },
+                {
+                        Path:      "fullDetails",
+                        Env:       "",
+                        Argument:  "fullDetails",
+                        Shorthand: "F",
+                        Default:   false,
+                        Usage:     "Include the more details to send to OpsGenie like proxy_entity_name, occurrences and agent details arch and os",
+                        Value:     &plugin.FullDetails,
+                },
 	}
 )
 
@@ -174,65 +226,85 @@ func parseDetails(event *types.Event) map[string]string {
 	details["proxy_entity_name"] = event.Check.ProxyEntityName
 	details["state"] = event.Check.State
 	details["status"] = fmt.Sprintf("%d", event.Check.Status)
-	details["ttl"] = fmt.Sprintf("%d", event.Check.Ttl)
-	details["interval"] = fmt.Sprintf("%d", event.Check.Interval)
 	details["occurrences"] = fmt.Sprintf("%d", event.Check.Occurrences)
 	details["occurrences_watermark"] = fmt.Sprintf("%d", event.Check.OccurrencesWatermark)
-	details["subscriptions"] = fmt.Sprintf("%v", event.Check.Subscriptions)
-	details["handlers"] = fmt.Sprintf("%v", event.Check.Handlers)
+	if plugin.FullDetails {
+		details["ttl"] = fmt.Sprintf("%d", event.Check.Ttl)
+		details["interval"] = fmt.Sprintf("%d", event.Check.Interval)
+		details["subscriptions"] = fmt.Sprintf("%v", event.Check.Subscriptions)
+		details["handlers"] = fmt.Sprintf("%v", event.Check.Handlers)
 
+		if event.Entity.EntityClass == "agent" {
+                        details["arch"] = event.Entity.System.GetArch()
+                        details["os"] = event.Entity.System.GetOS()
+                        details["platform"] = event.Entity.System.GetPlatform()
+                        details["platform_family"] = event.Entity.System.GetPlatformFamily()
+                        details["platform_version"] = event.Entity.System.GetPlatformVersion()
+                }
+	}
+
+        if plugin.WithAnnotations {
+                if event.Check.Annotations != nil {
+                        for key, value := range event.Check.Annotations {
+                                if !strings.Contains(key, plugin.PluginConfig.Keyspace) {
+                                        checkKey := fmt.Sprintf("%s_annotation_%s", "check", key)
+                                        details[checkKey] = value
+                                }
+                        }
+                }
+                if event.Entity.Annotations != nil {
+                        for key, value := range event.Entity.Annotations {
+                                if !strings.Contains(key, plugin.PluginConfig.Keyspace) {
+                                        entityKey := fmt.Sprintf("%s_annotation_%s", "entity", key)
+                                        details[entityKey] = value
+                                }
+                        }
+                }
+        }
+
+        if plugin.WithLabels {
+                if event.Check.Labels != nil {
+                        for key, value := range event.Check.Labels {
+                                checkKey := fmt.Sprintf("%s_label_%s", "check", key)
+                                details[checkKey] = value
+                        }
+                }
+                if event.Entity.Labels != nil {
+                        for key, value := range event.Entity.Labels {
+                                entityKey := fmt.Sprintf("%s_label_%s", "entity", key)
+                                details[entityKey] = value
+                        }
+                }
+        }
+
+	if len(plugin.SensuDashboard) > 0 {
+                details["sensuDashboard"] = fmt.Sprintf("source: %s/%s/events/%s/%s \n", plugin.SensuDashboard, event.Entity.Namespace, event.Entity.Name, event.Check.Name)
+        }
 	return details
 }
 
-// eventPriority func read priority in the event and return alerts.PX
+// eventPriority func read priority in the event and return alert.PX
 // check.Annotations override Entity.Annotations
-func eventPriority(event *types.Event) alerts.Priority {
-	if event.Entity.Annotations != nil && len(event.Entity.Annotations["opsgenie_priority"]) > 0 {
-		switch event.Entity.Annotations["opsgenie_priority"] {
-		case "P5":
-			return alerts.P5
+func eventPriority() alert.Priority {
+	switch plugin.Priority {
+	case "P5":
+		return alert.P5
 
-		case "P4":
-			return alerts.P4
+	case "P4":
+		return alert.P4
 
-		case "P3":
-			return alerts.P3
+	case "P3":
+		return alert.P3
 
-		case "P2":
-			return alerts.P2
+	case "P2":
+		return alert.P2
 
-		case "P1":
-			return alerts.P1
+	case "P1":
+		return alert.P1
 
-		default:
-			return alerts.P3
-
-		}
+	default:
+		return alert.P3
 	}
-	if event.Check.Annotations != nil && len(event.Check.Annotations["opsgenie_priority"]) > 0 {
-		switch event.Check.Annotations["opsgenie_priority"] {
-		case "P5":
-			return alerts.P5
-
-		case "P4":
-			return alerts.P4
-
-		case "P3":
-			return alerts.P3
-
-		case "P2":
-			return alerts.P2
-
-		case "P1":
-			return alerts.P1
-
-		default:
-			return alerts.P3
-
-		}
-	}
-
-	return alerts.P3
 }
 
 // stringInSlice checks if a slice contains a specific string
@@ -245,32 +317,52 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
+// switchOpsgenieRegion func
+func switchOpsgenieRegion() client.ApiUrl {
+	var region client.ApiUrl
+	apiRegionLowCase := strings.ToLower(plugin.APIRegion)
+	switch apiRegionLowCase {
+	case "eu":
+		region = client.API_URL_EU
+	case "us":
+		region = client.API_URL
+	default:
+		region = client.API_URL
+	}
+	return region
+}
+
 func executeHandler(event *types.Event) error {
-	// starting client instance
-	cli := new(ogcli.OpsGenieClient)
-	cli.SetAPIKey(plugin.AuthToken)
-	cli.SetOpsGenieAPIUrl(strings.TrimSuffix(plugin.APIURL, "/"))
-	alertCli, _ := cli.AlertV2()
+	alertClient, err := alert.NewClient(&client.Config{
+		ApiKey:         plugin.AuthToken,
+		OpsGenieAPIURL: switchOpsgenieRegion(),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create opsgenie client: %s", err)
+	}
+
+	if event.Check.Status != 0 {
+		return createIncident(alertClient, event)
+	}
 
 	// check if event has a alert
-	hasAlert, _ := getAlert(alertCli, event)
-	if event.Check.Status != 0 {
-		return createIncident(alertCli, event)
-	}
+	hasAlert, _ := getAlert(alertClient, event)
+
 	// close incident if status == 0
 	if hasAlert != notFound && event.Check.Status == 0 {
-		return closeAlert(alertCli, event, hasAlert)
+		return closeAlert(alertClient, event, hasAlert)
 	}
 
 	return nil
 }
 
 // createIncident func create an alert in OpsGenie
-func createIncident(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) error {
+func createIncident(alertClient *alert.Client, event *types.Event) error {
 	var (
 		note string
 		err  error
 	)
+
 	if plugin.IncludeEventInNote {
 		note, err = getNote(event)
 		if err != nil {
@@ -278,68 +370,68 @@ func createIncident(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) e
 		}
 	}
 
-	teams := []alerts.TeamRecipient{
-		&alerts.Team{Name: plugin.Team},
+	teams := []alert.Responder{
+		{Type: alert.EscalationResponder, Name: plugin.Team},
+		{Type: alert.ScheduleResponder, Name: plugin.Team},
 	}
 	title, alias, tags := parseEventKeyTags(event)
 
-	request := alerts.CreateAlertRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	createResult, err := alertClient.Create(ctx, &alert.CreateAlertRequest{
 		Message:     title,
 		Alias:       alias,
 		Description: parseDescription(event),
+		Responders:  teams,
+		Actions:     plugin.Actions,
+		Tags:        tags,
 		Details:     parseDetails(event),
-		Teams:       teams,
 		Entity:      event.Entity.Name,
 		Source:      source,
-		Priority:    eventPriority(event),
+		Priority:    eventPriority(),
 		Note:        note,
-		Tags:        tags,
-	}
+	})
 
-	response, err := alertCli.Create(request)
 	if err != nil {
 		fmt.Println(err.Error())
 	} else {
-		fmt.Println("Create request ID: " + response.RequestID)
+		fmt.Println("Create request ID: " + createResult.RequestId)
 	}
 	return nil
 }
 
 // getAlert func get a alert using an alias.
-func getAlert(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event) (string, error) {
+func getAlert(alertClient *alert.Client, event *types.Event) (string, error) {
 	_, alias, _ := parseEventKeyTags(event)
-	response, err := alertCli.Get(alerts.GetAlertRequest{
-		Identifier: &alerts.Identifier{
-			Alias: alias,
-		},
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	getResult, err := alertClient.Get(ctx, &alert.GetAlertRequest{
+		IdentifierType:  alert.ALIAS,
+		IdentifierValue: alias,
 	})
 
 	if err != nil {
 		return notFound, nil
 	}
-	alert := response.Alert
-	fmt.Printf("ID: %s, Message: %s, Count: %d \n", alert.ID, alert.Message, alert.Count)
-	return alert.ID, nil
+	fmt.Printf("ID: %s, Message: %s, Count: %d \n", getResult.Id, getResult.Message, getResult.Count)
+	return getResult.Id, nil
 }
 
 // closeAlert func close an alert if status == 0
-func closeAlert(alertCli *ogcli.OpsGenieAlertV2Client, event *types.Event, alertid string) error {
-
-	identifier := alerts.Identifier{
-		ID: alertid,
-	}
-	closeRequest := alerts.CloseRequest{
-		Identifier: &identifier,
-		Source:     source,
-		Note:       "Closed Automatically",
-	}
-
-	response, err := alertCli.Close(closeRequest)
+func closeAlert(alertClient *alert.Client, event *types.Event, alertid string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	closeResult, err := alertClient.Close(ctx, &alert.CloseAlertRequest{
+		IdentifierType:  alert.ALERTID,
+		IdentifierValue: alertid,
+		Source:          source,
+		Note:            "Closed Automatically",
+	})
 
 	if err != nil {
-		fmt.Printf("[ERROR] Not Closed: %s", err)
+		fmt.Printf("[ERROR] Not Closed: %s\n", err)
 	}
-	fmt.Printf("RequestID %s to Close %s", alertid, response.RequestID)
+	fmt.Printf("RequestID %s to Close %s\n", alertid, closeResult.RequestId)
 
 	return nil
 }

@@ -3,21 +3,17 @@ module github.com/nixwiz/sensu-opsgenie-handler
 go 1.14
 
 require (
-	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/coreos/etcd v3.3.25+incompatible // indirect
-	github.com/franela/goblin v0.0.0-20200409142057-1def193310bb // indirect
-	github.com/franela/goreq v0.0.0-20171204163338-bcd34c9993f8 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
-	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/opsgenie/opsgenie-go-sdk v0.0.0-20181102130742-d57b8391ca90
+	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.2
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/robertkrimen/otto v0.0.0-20200922221731-ef014fd054ac // indirect
-	github.com/sensu-community/sensu-plugin-sdk v0.10.1
+	github.com/sensu-community/sensu-plugin-sdk v0.11.0
 	github.com/sensu/sensu-go/types v0.3.0
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/spf13/afero v1.4.1 // indirect

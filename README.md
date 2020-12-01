@@ -46,15 +46,20 @@ Available Commands:
 
 Flags:
   -a, --auth string                  The OpsGenie V2 API authentication token, use default from OPSGENIE_AUTHTOKEN env var
-  -h, --help                         help for sensu-opsgenie-handler
-  -i, --includeEventInNote           Include the event JSON in the payload sent to OpsGenie
-  -m, --messageTemplate string       The template for the message to be sent (default "{{.Entity.Name}}/{{.Check.Name}}")
-  -l, --messageLimit int             The maximum length of the message field (default 100)
-  -d, --descriptionTemplate string   The template for the description to be sent (default "{{.Check.Output}}")
-  -L, --descriptionLimit int         The maximum length of the description field (default 100)
-  -s, --sensuDashboard string        The OpsGenie Handler will use it to create a source Sensu Dashboard URL. Use OPSGENIE_SENSU_DASHBOARD. Example: http://sensu-dashboard.example.local/c/~/n (default "disabled")
   -t, --team string                  The OpsGenie V2 API Team, use default from OPSGENIE_TEAM env var
-  -u, --url string                   The OpsGenie V2 API URL, use default from OPSGENIE_APIURL env var (default "https://api.opsgenie.com")
+  -r, --region string                The OpsGenie API Region (us or eu), use default from OPSGENIE_REGION env var (default "us")
+  -p, --priority string              The OpsGenie Alert Priority, use default from OPSGENIE_PRIORITY env var (default "P3")
+  -A, --actions strings              The OpsGenie custom actions to assign to the event
+  -d, --descriptionTemplate string   The template for the description to be sent (default "{{.Check.Output}}")
+  -L, --descriptionLimit int         The maximum length of the description field (default 15000)
+  -m, --messageTemplate string       The template for the message to be sent (default "{{.Entity.Name}}/{{.Check.Name}}")
+  -l, --messageLimit int             The maximum length of the message field (default 130)
+  -i, --includeEventInNote           Include the event JSON in the payload sent to OpsGenie
+  -F, --fullDetails                  Include the more details to send to OpsGenie like proxy_entity_name, occurrences and agent details arch and os
+  -w, --withAnnotations              Include the event.metadata.Annotations in details to send to OpsGenie
+  -W, --withLabels                   Include the event.metadata.Labels in details to send to OpsGenie
+  -s, --sensuDashboard string        The OpsGenie Handler will use it to create a source Sensu Dashboard URL. Use OPSGENIE_SENSU_DASHBOARD. Example: http://sensu-dashboard.example.local/c/~/n
+  -h, --help                         help for sensu-opsgenie-handler
 
 Use "sensu-opsgenie-handler [command] --help" for more information about a command.
 
@@ -64,33 +69,16 @@ To configure OpsGenie Sensu Integration follow these first part in [OpsGenie Doc
 
 #### To use Opsgenie Priority
 
-Please add this annotations inside sensu-agent:
-```sh
-# /etc/sensu/agent.yml example
-annotations:
-  opsgenie_priority: "P1"
-```
+Use the `--priority` command-line option to specify a default priority and then use check and/or
+entity annotations to override the default on a per-check or per-entity basis.  See
+[Argument Annotations](#argument-annotations) for more information.
 
-Or inside check:
-```yml
----
-type: CheckConfig
-api_version: core/v2
-metadata:
-  name: interval_check
-  namespace: default
-  annotations:
-    opsgenie_priority: P2
-    documentation": https://docs.sensu.io/sensu-go/latest
-spec:
-  command: check-cpu.sh -w 75 -c 90
-  subscriptions:
-  - system
-  handlers:
-  - opsgenie
-  interval: 60
-  publish: true
-```
+#### To use alert actions
+
+Use the `--actions` command-line option to specify alert actions to be triggered by an event.  The
+argument for this option is a comma separated list of actions.  Use check and/or entity annotations
+to set this option on a per-check or per-entity basis.  See [Argument Annotations](#argument-annotations)
+for more information.
 
 ## Configuration
 ### Sensu Go
@@ -138,15 +126,16 @@ arguments specified directly on the command line override the corresponding envi
 
 |Argument             |Environment Variable         |
 |---------------------|-----------------------------|
-|--url                |OPSGENIE_APIURL              |
+|--region             |OPSGENIE_REGION              |
 |--auth               |OPSGENIE_AUTHTOKEN           |
 |--team               |OPSGENIE_TEAM                |
-|--withAnnotations    |OPSGENIE_ANNOTATIONS         |
+|--priority           |OPSGENIE_PRIORITY            |
 |--sensuDashboard     |OPSGENIE_SENSU_DASHBOARD     |
 |--messageTemplate    |OPSGENIE_MESSAGE_TEMPLATE    |
 |--messageLimit       |OPSGENIE_MESSAGE_LIMIT       |
 |--descriptionTemplate|OPSGENIE_DESCRIPTION_TEMPLATE|
 |--descriptionLimit   |OPSGENIE_DESCRIPTION_LIMIT   |
+
 
 **Security Note:** Care should be taken to not expose the auth token for this handler by specifying it
 on the command line or by directly setting the environment variable in the handler definition.  It is

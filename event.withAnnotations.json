@@ -4,7 +4,7 @@
     "entity_class": "agent",
     "sensu_agent_version": "5.17.2",
     "system": {
-      "hostname": "webserver04",
+      "hostname": "webserver02",
       "os": "linux",
       "platform": "centos",
       "platform_family": "rhel",
@@ -40,7 +40,7 @@
     },
     "subscriptions": [
       "testing",
-      "entity:webserver04"
+      "entity:webserver02"
     ],
     "last_seen": 1542667635,
     "deregister": false,
@@ -58,12 +58,12 @@
       "secret"
     ],
     "metadata": {
-      "name": "webserver04",
+      "name": "webserver02",
       "namespace": "default",
       "labels": null,
       "annotations": {
-        "sensu.io/plugins/sensu-opsgenie-handler/config/priority": "P2",
-        "documentation": "http://golang.org"
+        "documentation": "http://golang.org",
+        "playbook": "https://docs.sensu.io/sensu-go/latest"
       }
     }
   },
@@ -120,7 +120,10 @@
       "name": "check-nginx",
       "namespace": "default",
       "labels": null,
-      "annotations": null
+      "annotations": {
+        "documentation": "https://google.com",
+        "playbook": "https://play.golang.org/"
+      }
     }
   }
 }
