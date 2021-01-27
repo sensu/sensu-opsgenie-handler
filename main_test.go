@@ -26,6 +26,7 @@ func TestParseEventKeyTags(t *testing.T) {
 	assert.NoError(t, err)
 	plugin.MessageTemplate = "{{.Entity.Name}}/{{.Check.Name}}"
 	plugin.MessageLimit = 100
+	plugin.TagsTemplates = []string{"{{.Entity.Name}}", "{{.Check.Name}}", "{{.Entity.Namespace}}", "{{.Entity.EntityClass}}"}
 	title, alias, tags := parseEventKeyTags(event)
 	assert.Contains(t, title, "foo")
 	assert.Contains(t, alias, "foo")
@@ -106,23 +107,22 @@ func TestTrim(t *testing.T) {
 }
 
 func TestSwitchOpsgenieRegion(t *testing.T) {
-        expectedValueUS := client.API_URL
-        expectedValueEU := client.API_URL_EU
+	expectedValueUS := client.API_URL
+	expectedValueEU := client.API_URL_EU
 
-        testUS := switchOpsgenieRegion()
+	testUS := switchOpsgenieRegion()
 
-        assert.Equal(t, testUS, expectedValueUS)
+	assert.Equal(t, testUS, expectedValueUS)
 
-        plugin.APIRegion = "eu"
+	plugin.APIRegion = "eu"
 
-        testEU := switchOpsgenieRegion()
+	testEU := switchOpsgenieRegion()
 
-        assert.Equal(t, testEU, expectedValueEU)
+	assert.Equal(t, testEU, expectedValueEU)
 
-        plugin.APIRegion = "EU"
+	plugin.APIRegion = "EU"
 
-        testEU2 := switchOpsgenieRegion()
+	testEU2 := switchOpsgenieRegion()
 
-        assert.Equal(t, testEU2, expectedValueEU)
+	assert.Equal(t, testEU2, expectedValueEU)
 }
-

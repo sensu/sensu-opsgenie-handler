@@ -7,13 +7,16 @@
 
 ## Table of Contents
 - [Overview](#overview)
-- [Files](#files)
 - [Usage examples](#usage-examples)
+  - [Help output](#help-output)
+  - [Templates](#templates)
+  - [To use Opsgenie Priority](#to-use-opsgenie-priority)
+  - [To use alert actions](#to-use-alert-actions)
 - [Configuration](#configuration)
   - [Asset registration](#asset-registration)
   - [Handler definition](#handler-definition)
-  - [Environment Variables](#environment-variables)
-  - [Argument Annotations](#argument-annotations)
+  - [Environment variables](#environment-variables)
+  - [Argument annotations](#argument-annotations)
   - [Proxy support](#proxy-support)
 - [Installation from source](#installation-from-source)
 - [Contributing](#contributing)
@@ -24,13 +27,13 @@ The Sensu Go OpsGenie Handler is a [Sensu Event Handler][3] which manages
 [OpsGenie][2] incidents, for alerting operators. With this handler,
 [Sensu][1] can trigger OpsGenie incidents.
 
+To configure OpsGenie Sensu Integration follow these first part in [OpsGenie Docs][5].
+
 This handler was inspired by [pagerduty plugin][6].
 
-## Files
+## Usage examples
 
-N/A
-
-## Usage Examples
+### Help output
 
 Help:
 ```
@@ -58,6 +61,7 @@ Flags:
   -F, --fullDetails                  Include the more details to send to OpsGenie like proxy_entity_name, occurrences and agent details arch and os
   -w, --withAnnotations              Include the event.metadata.Annotations in details to send to OpsGenie
   -W, --withLabels                   Include the event.metadata.Labels in details to send to OpsGenie
+  -T, --tagTemplate strings          The template to assign for the incident in OpsGenie (default [{{.Entity.Name}},{{.Check.Name}},{{.Entity.Namespace}},{{.Entity.EntityClass}}])
   -s, --sensuDashboard string        The OpsGenie Handler will use it to create a source Sensu Dashboard URL. Use OPSGENIE_SENSU_DASHBOARD. Example: http://sensu-dashboard.example.local/c/~/n
   -h, --help                         help for sensu-opsgenie-handler
 
@@ -65,15 +69,20 @@ Use "sensu-opsgenie-handler [command] --help" for more information about a comma
 
 ```
 
-To configure OpsGenie Sensu Integration follow these first part in [OpsGenie Docs][5].
+### Templates
 
-#### To use Opsgenie Priority
+This handler provides options for using templates to populate various fields in the OpsGenie
+alert with values provided in the Sensu event. More information on template syntax and format
+can be found in [the documentation][12]
+
+
+### To use Opsgenie Priority
 
 Use the `--priority` command-line option to specify a default priority and then use check and/or
 entity annotations to override the default on a per-check or per-entity basis.  See
 [Argument Annotations](#argument-annotations) for more information.
 
-#### To use alert actions
+### To use alert actions
 
 Use the `--actions` command-line option to specify alert actions to be triggered by an event.  The
 argument for this option is a comma separated list of actions.  Use check and/or entity annotations
@@ -81,8 +90,7 @@ to set this option on a per-check or per-entity basis.  See [Argument Annotation
 for more information.
 
 ## Configuration
-### Sensu Go
-#### Asset registration
+### Asset registration
 
 [Sensu Assets][7] are the best way to make use of this plugin. If you're not using an asset, please
 consider doing so! If you're using sensuctl 5.13 with Sensu Backend 5.13 or later, you can use the
@@ -95,7 +103,7 @@ sensuctl asset add nixwiz/sensu-opsgenie-handler
 If you're using an earlier version of sensuctl, you can find the asset on the [Bonsai Asset Index][8].
 
 
-#### Handler definition
+### Handler definition
 
 ```yml
 type: Handler
@@ -119,7 +127,7 @@ spec:
     secret: opgsgenie_authtoken
 ```
 
-### Environment Variables
+### Environment variables
 
 Most arguments for this handler are available to be set via environment variables.  However, any
 arguments specified directly on the command line override the corresponding environment variable.
@@ -154,7 +162,7 @@ spec:
   id: OPSGENIE_AUTHTOKEN
 ```
 
-### Argument Annotations
+### Argument annotations
 
 All arguments for this handler are tunable on a per entity or check basis based on annotations.  The
 annotations keyspace for this handler is `sensu.io/plugins/sensu-opsgenie-handler/config`.
@@ -172,16 +180,12 @@ metadata:
 [...]
 ```
 
-### Proxy Support
+### Proxy support
 
 This handler supports the use of the environment variables HTTP_PROXY,
 HTTPS_PROXY, and NO_PROXY (or the lowercase versions thereof). HTTPS_PROXY takes
 precedence over HTTP_PROXY for https requests.  The environment values may be
 either a complete URL or a "host[:port]", in which case the "http" scheme is assumed.
-
-### Sensu Core
-
-See [this plugin][9]
 
 ## Installation from source
 
@@ -208,3 +212,4 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 [9]: https://github.com/sensu-plugins/sensu-plugins-opsgenie
 [10]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/
 [11]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/#use-env-for-secrets-management
+[12]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-process/handler-templates/
