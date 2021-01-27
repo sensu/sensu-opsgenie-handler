@@ -7,6 +7,8 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.9.0] - 2021-01-27
+
 ### Changed
 - Changed tags from hard-coded list to templates settable via argument
 - Moved test files into tests directory to clean up top level directory
