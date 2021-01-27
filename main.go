@@ -36,6 +36,7 @@ type Config struct {
 	MessageTemplate     string
 	DescriptionTemplate string
 	Actions             []string
+	TagsTemplates       []string
 }
 
 var (
@@ -149,32 +150,41 @@ var (
 			Value:     &plugin.Actions,
 		},
 		{
-                        Path:      "withAnnotations",
-                        Env:       "",
-                        Argument:  "withAnnotations",
-                        Shorthand: "w",
-                        Default:   false,
-                        Usage:     "Include the event.metadata.Annotations in details to send to OpsGenie",
-                        Value:     &plugin.WithAnnotations,
-                },
-                {
-                        Path:      "withLabels",
-                        Env:       "",
-                        Argument:  "withLabels",
-                        Shorthand: "W",
-                        Default:   false,
-                        Usage:     "Include the event.metadata.Labels in details to send to OpsGenie",
-                        Value:     &plugin.WithLabels,
-                },
-                {
-                        Path:      "fullDetails",
-                        Env:       "",
-                        Argument:  "fullDetails",
-                        Shorthand: "F",
-                        Default:   false,
-                        Usage:     "Include the more details to send to OpsGenie like proxy_entity_name, occurrences and agent details arch and os",
-                        Value:     &plugin.FullDetails,
-                },
+			Path:      "withAnnotations",
+			Env:       "",
+			Argument:  "withAnnotations",
+			Shorthand: "w",
+			Default:   false,
+			Usage:     "Include the event.metadata.Annotations in details to send to OpsGenie",
+			Value:     &plugin.WithAnnotations,
+		},
+		{
+			Path:      "withLabels",
+			Env:       "",
+			Argument:  "withLabels",
+			Shorthand: "W",
+			Default:   false,
+			Usage:     "Include the event.metadata.Labels in details to send to OpsGenie",
+			Value:     &plugin.WithLabels,
+		},
+		{
+			Path:      "fullDetails",
+			Env:       "",
+			Argument:  "fullDetails",
+			Shorthand: "F",
+			Default:   false,
+			Usage:     "Include the more details to send to OpsGenie like proxy_entity_name, occurrences and agent details arch and os",
+			Value:     &plugin.FullDetails,
+		},
+		{
+			Path:      "tagTemplate",
+			Env:       "",
+			Argument:  "tagTemplate",
+			Shorthand: "T",
+			Default:   []string{"{{.Entity.Name}}", "{{.Check.Name}}", "{{.Entity.Namespace}}", "{{.Entity.EntityClass}}"},
+			Usage:     "The template to assign for the incident in OpsGenie",
+			Value:     &plugin.TagsTemplates,
+		},
 	}
 )
 
@@ -194,7 +204,7 @@ func checkArgs(_ *types.Event) error {
 }
 
 // parseEventKeyTags func returns string, string, and []string with event data
-// fist string contains custom templte string to use in message
+// fist string contains custom template string to use in message
 // second string contains Entity.Name/Check.Name to use in alias
 // []string contains Entity.Name Check.Name Entity.Namespace, event.Entity.EntityClass to use as tags in Opsgenie
 func parseEventKeyTags(event *types.Event) (title string, alias string, tags []string) {
@@ -203,7 +213,13 @@ func parseEventKeyTags(event *types.Event) (title string, alias string, tags []s
 	if err != nil {
 		return "", "", []string{}
 	}
-	tags = append(tags, event.Entity.Name, event.Check.Name, event.Entity.Namespace, event.Entity.EntityClass)
+	for _, v := range plugin.TagsTemplates {
+		tag, err := templates.EvalTemplate("tags", v, event)
+		if err != nil {
+			return "", "", []string{}
+		}
+		tags = append(tags, tag)
+	}
 	return trim(title, plugin.MessageLimit), alias, tags
 }
 
@@ -235,51 +251,51 @@ func parseDetails(event *types.Event) map[string]string {
 		details["handlers"] = fmt.Sprintf("%v", event.Check.Handlers)
 
 		if event.Entity.EntityClass == "agent" {
-                        details["arch"] = event.Entity.System.GetArch()
-                        details["os"] = event.Entity.System.GetOS()
-                        details["platform"] = event.Entity.System.GetPlatform()
-                        details["platform_family"] = event.Entity.System.GetPlatformFamily()
-                        details["platform_version"] = event.Entity.System.GetPlatformVersion()
-                }
+			details["arch"] = event.Entity.System.GetArch()
+			details["os"] = event.Entity.System.GetOS()
+			details["platform"] = event.Entity.System.GetPlatform()
+			details["platform_family"] = event.Entity.System.GetPlatformFamily()
+			details["platform_version"] = event.Entity.System.GetPlatformVersion()
+		}
 	}
 
-        if plugin.WithAnnotations {
-                if event.Check.Annotations != nil {
-                        for key, value := range event.Check.Annotations {
-                                if !strings.Contains(key, plugin.PluginConfig.Keyspace) {
-                                        checkKey := fmt.Sprintf("%s_annotation_%s", "check", key)
-                                        details[checkKey] = value
-                                }
-                        }
-                }
-                if event.Entity.Annotations != nil {
-                        for key, value := range event.Entity.Annotations {
-                                if !strings.Contains(key, plugin.PluginConfig.Keyspace) {
-                                        entityKey := fmt.Sprintf("%s_annotation_%s", "entity", key)
-                                        details[entityKey] = value
-                                }
-                        }
-                }
-        }
+	if plugin.WithAnnotations {
+		if event.Check.Annotations != nil {
+			for key, value := range event.Check.Annotations {
+				if !strings.Contains(key, plugin.PluginConfig.Keyspace) {
+					checkKey := fmt.Sprintf("%s_annotation_%s", "check", key)
+					details[checkKey] = value
+				}
+			}
+		}
+		if event.Entity.Annotations != nil {
+			for key, value := range event.Entity.Annotations {
+				if !strings.Contains(key, plugin.PluginConfig.Keyspace) {
+					entityKey := fmt.Sprintf("%s_annotation_%s", "entity", key)
+					details[entityKey] = value
+				}
+			}
+		}
+	}
 
-        if plugin.WithLabels {
-                if event.Check.Labels != nil {
-                        for key, value := range event.Check.Labels {
-                                checkKey := fmt.Sprintf("%s_label_%s", "check", key)
-                                details[checkKey] = value
-                        }
-                }
-                if event.Entity.Labels != nil {
-                        for key, value := range event.Entity.Labels {
-                                entityKey := fmt.Sprintf("%s_label_%s", "entity", key)
-                                details[entityKey] = value
-                        }
-                }
-        }
+	if plugin.WithLabels {
+		if event.Check.Labels != nil {
+			for key, value := range event.Check.Labels {
+				checkKey := fmt.Sprintf("%s_label_%s", "check", key)
+				details[checkKey] = value
+			}
+		}
+		if event.Entity.Labels != nil {
+			for key, value := range event.Entity.Labels {
+				entityKey := fmt.Sprintf("%s_label_%s", "entity", key)
+				details[entityKey] = value
+			}
+		}
+	}
 
 	if len(plugin.SensuDashboard) > 0 {
-                details["sensuDashboard"] = fmt.Sprintf("source: %s/%s/events/%s/%s \n", plugin.SensuDashboard, event.Entity.Namespace, event.Entity.Name, event.Check.Name)
-        }
+		details["sensuDashboard"] = fmt.Sprintf("source: %s/%s/events/%s/%s \n", plugin.SensuDashboard, event.Entity.Namespace, event.Entity.Name, event.Check.Name)
+	}
 	return details
 }
 
@@ -395,6 +411,7 @@ func createIncident(alertClient *alert.Client, event *types.Event) error {
 	if err != nil {
 		fmt.Println(err.Error())
 	} else {
+		// FUTURE: send to AH
 		fmt.Println("Create request ID: " + createResult.RequestId)
 	}
 	return nil
@@ -431,6 +448,7 @@ func closeAlert(alertClient *alert.Client, event *types.Event, alertid string) e
 	if err != nil {
 		fmt.Printf("[ERROR] Not Closed: %s\n", err)
 	}
+	// FUTURE: send to AH
 	fmt.Printf("RequestID %s to Close %s\n", alertid, closeResult.RequestId)
 
 	return nil

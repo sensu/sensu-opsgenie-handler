@@ -7,6 +7,15 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+- Changed tags from hard-coded list to templates settable via argument
+- Moved test files into tests directory to clean up top level directory
+- Updated all modules with 'go get -u' and 'go mod tidy'
+- README updates and cleanup
+
+### Added
+- Lint GitHub Action
+
 ## [0.8.0] - 2020-12-01
 
 ### Changed
