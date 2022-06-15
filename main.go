@@ -9,9 +9,9 @@ import (
 
 	"github.com/opsgenie/opsgenie-go-sdk-v2/alert"
 	"github.com/opsgenie/opsgenie-go-sdk-v2/client"
-	"github.com/sensu-community/sensu-plugin-sdk/sensu"
-	"github.com/sensu-community/sensu-plugin-sdk/templates"
 	"github.com/sensu/sensu-go/types"
+	"github.com/sensu/sensu-plugin-sdk/sensu"
+	"github.com/sensu/sensu-plugin-sdk/templates"
 )
 
 const (
@@ -48,8 +48,8 @@ var (
 		},
 	}
 
-	options = []*sensu.PluginConfigOption{
-		{
+	options = []sensu.ConfigOption{
+		&sensu.PluginConfigOption[string]{
 			Path:      "region",
 			Env:       "OPSGENIE_REGION",
 			Argument:  "region",
@@ -58,7 +58,7 @@ var (
 			Usage:     "The OpsGenie API Region (us or eu), use default from OPSGENIE_REGION env var",
 			Value:     &plugin.APIRegion,
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "auth",
 			Env:       "OPSGENIE_AUTHTOKEN",
 			Argument:  "auth",
@@ -68,7 +68,7 @@ var (
 			Usage:     "The OpsGenie V2 API authentication token, use default from OPSGENIE_AUTHTOKEN env var",
 			Value:     &plugin.AuthToken,
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "team",
 			Env:       "OPSGENIE_TEAM",
 			Argument:  "team",
@@ -77,7 +77,7 @@ var (
 			Usage:     "The OpsGenie V2 API Team, use default from OPSGENIE_TEAM env var",
 			Value:     &plugin.Team,
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "sensuDashboard",
 			Env:       "OPSGENIE_SENSU_DASHBOARD",
 			Argument:  "sensuDashboard",
@@ -86,7 +86,7 @@ var (
 			Usage:     "The OpsGenie Handler will use it to create a source Sensu Dashboard URL. Use OPSGENIE_SENSU_DASHBOARD. Example: http://sensu-dashboard.example.local/c/~/n",
 			Value:     &plugin.SensuDashboard,
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "messageTemplate",
 			Env:       "OPSGENIE_MESSAGE_TEMPLATE",
 			Argument:  "messageTemplate",
@@ -95,7 +95,7 @@ var (
 			Usage:     "The template for the message to be sent",
 			Value:     &plugin.MessageTemplate,
 		},
-		{
+		&sensu.PluginConfigOption[int]{
 			Path:      "messageLimit",
 			Env:       "OPSGENIE_MESSAGE_LIMIT",
 			Argument:  "messageLimit",
@@ -104,7 +104,7 @@ var (
 			Usage:     "The maximum length of the message field",
 			Value:     &plugin.MessageLimit,
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "descriptionTemplate",
 			Env:       "OPSGENIE_DESCRIPTION_TEMPLATE",
 			Argument:  "descriptionTemplate",
@@ -113,7 +113,7 @@ var (
 			Usage:     "The template for the description to be sent",
 			Value:     &plugin.DescriptionTemplate,
 		},
-		{
+		&sensu.PluginConfigOption[int]{
 			Path:      "descriptionLimit",
 			Env:       "OPSGENIE_DESCRIPTION_LIMIT",
 			Argument:  "descriptionLimit",
@@ -122,7 +122,7 @@ var (
 			Usage:     "The maximum length of the description field",
 			Value:     &plugin.DescriptionLimit,
 		},
-		{
+		&sensu.PluginConfigOption[bool]{
 			Path:      "includeEventInNote",
 			Env:       "",
 			Argument:  "includeEventInNote",
@@ -131,7 +131,7 @@ var (
 			Usage:     "Include the event JSON in the payload sent to OpsGenie",
 			Value:     &plugin.IncludeEventInNote,
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "priority",
 			Env:       "OPSGENIE_PRIORITY",
 			Argument:  "priority",
@@ -140,7 +140,7 @@ var (
 			Usage:     "The OpsGenie Alert Priority, use default from OPSGENIE_PRIORITY env var",
 			Value:     &plugin.Priority,
 		},
-		{
+		&sensu.SlicePluginConfigOption[string]{
 			Path:      "actions",
 			Env:       "",
 			Argument:  "actions",
@@ -149,7 +149,7 @@ var (
 			Usage:     "The OpsGenie custom actions to assign to the event",
 			Value:     &plugin.Actions,
 		},
-		{
+		&sensu.PluginConfigOption[bool]{
 			Path:      "withAnnotations",
 			Env:       "",
 			Argument:  "withAnnotations",
@@ -158,7 +158,7 @@ var (
 			Usage:     "Include the event.metadata.Annotations in details to send to OpsGenie",
 			Value:     &plugin.WithAnnotations,
 		},
-		{
+		&sensu.PluginConfigOption[bool]{
 			Path:      "withLabels",
 			Env:       "",
 			Argument:  "withLabels",
@@ -167,7 +167,7 @@ var (
 			Usage:     "Include the event.metadata.Labels in details to send to OpsGenie",
 			Value:     &plugin.WithLabels,
 		},
-		{
+		&sensu.PluginConfigOption[bool]{
 			Path:      "fullDetails",
 			Env:       "",
 			Argument:  "fullDetails",
@@ -176,7 +176,7 @@ var (
 			Usage:     "Include the more details to send to OpsGenie like proxy_entity_name, occurrences and agent details arch and os",
 			Value:     &plugin.FullDetails,
 		},
-		{
+		&sensu.SlicePluginConfigOption[string]{
 			Path:      "tagTemplate",
 			Env:       "",
 			Argument:  "tagTemplate",
