@@ -3,8 +3,8 @@ module github.com/nixwiz/sensu-opsgenie-handler
 go 1.18
 
 require (
-	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.6
-	github.com/sensu/sensu-go/types v0.10.0
+	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.12
+	github.com/sensu/sensu-go/api/core/v2 v2.14.0
 	github.com/sensu/sensu-plugin-sdk v0.16.0
 	github.com/stretchr/testify v1.6.0
 )
@@ -31,7 +31,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/robertkrimen/otto v0.0.0-20200922221731-ef014fd054ac // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/sensu/sensu-go/api/core/v2 v2.14.0 // indirect
+	github.com/sensu/sensu-go/types v0.10.0 // indirect
 	github.com/sensu/sensu-licensing v0.1.2 // indirect
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/spf13/afero v1.5.1 // indirect

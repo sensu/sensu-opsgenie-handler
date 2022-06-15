@@ -6,12 +6,12 @@ import (
 
 	"github.com/opsgenie/opsgenie-go-sdk-v2/alert"
 	"github.com/opsgenie/opsgenie-go-sdk-v2/client"
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetNote(t *testing.T) {
-	event := types.FixtureEvent("foo", "bar")
+	event := corev2.FixtureEvent("foo", "bar")
 	eventJSON, err := json.Marshal(event)
 	assert.NoError(t, err)
 	note, err := getNote(event)
@@ -21,7 +21,7 @@ func TestGetNote(t *testing.T) {
 }
 
 func TestParseEventKeyTags(t *testing.T) {
-	event := types.FixtureEvent("foo", "bar")
+	event := corev2.FixtureEvent("foo", "bar")
 	_, err := json.Marshal(event)
 	assert.NoError(t, err)
 	plugin.MessageTemplate = "{{.Entity.Name}}/{{.Check.Name}}"
@@ -34,7 +34,7 @@ func TestParseEventKeyTags(t *testing.T) {
 }
 
 func TestParseDescription(t *testing.T) {
-	event := types.FixtureEvent("foo", "bar")
+	event := corev2.FixtureEvent("foo", "bar")
 	event.Check.Output = "Check OK"
 	_, err := json.Marshal(event)
 	assert.NoError(t, err)
@@ -45,7 +45,7 @@ func TestParseDescription(t *testing.T) {
 }
 
 func TestParseDetails(t *testing.T) {
-	event := types.FixtureEvent("foo", "bar")
+	event := corev2.FixtureEvent("foo", "bar")
 	event.Check.Output = "Check OK"
 	event.Check.State = "passing"
 	event.Check.Status = 0
@@ -82,7 +82,7 @@ func TestEventPriority(t *testing.T) {
 
 func TestCheckArgs(t *testing.T) {
 	assert := assert.New(t)
-	event := types.FixtureEvent("entity1", "check1")
+	event := corev2.FixtureEvent("entity1", "check1")
 	assert.Error(checkArgs(event))
 	plugin.AuthToken = "Testing"
 	assert.Error(checkArgs(event))

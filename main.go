@@ -9,7 +9,7 @@ import (
 
 	"github.com/opsgenie/opsgenie-go-sdk-v2/alert"
 	"github.com/opsgenie/opsgenie-go-sdk-v2/client"
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/sensu/sensu-plugin-sdk/sensu"
 	"github.com/sensu/sensu-plugin-sdk/templates"
 )
@@ -193,7 +193,7 @@ func main() {
 	handler.Execute()
 }
 
-func checkArgs(_ *types.Event) error {
+func checkArgs(_ *corev2.Event) error {
 	if len(plugin.AuthToken) == 0 {
 		return fmt.Errorf("authentication token is empty")
 	}
@@ -207,7 +207,7 @@ func checkArgs(_ *types.Event) error {
 // fist string contains custom template string to use in message
 // second string contains Entity.Name/Check.Name to use in alias
 // []string contains Entity.Name Check.Name Entity.Namespace, event.Entity.EntityClass to use as tags in Opsgenie
-func parseEventKeyTags(event *types.Event) (title string, alias string, tags []string) {
+func parseEventKeyTags(event *corev2.Event) (title string, alias string, tags []string) {
 	alias = fmt.Sprintf("%s/%s", event.Entity.Name, event.Check.Name)
 	title, err := templates.EvalTemplate("title", plugin.MessageTemplate, event)
 	if err != nil {
@@ -224,7 +224,7 @@ func parseEventKeyTags(event *types.Event) (title string, alias string, tags []s
 }
 
 // parseDescription func returns string with custom template string to use in description
-func parseDescription(event *types.Event) (description string) {
+func parseDescription(event *corev2.Event) (description string) {
 	description, err := templates.EvalTemplate("description", plugin.DescriptionTemplate, event)
 	if err != nil {
 		return ""
@@ -235,7 +235,7 @@ func parseDescription(event *types.Event) (description string) {
 }
 
 // parseDetails func returns a map of string string with check information for the details field
-func parseDetails(event *types.Event) map[string]string {
+func parseDetails(event *corev2.Event) map[string]string {
 	details := make(map[string]string)
 	details["output"] = event.Check.Output
 	details["command"] = event.Check.Command
@@ -348,7 +348,7 @@ func switchOpsgenieRegion() client.ApiUrl {
 	return region
 }
 
-func executeHandler(event *types.Event) error {
+func executeHandler(event *corev2.Event) error {
 	alertClient, err := alert.NewClient(&client.Config{
 		ApiKey:         plugin.AuthToken,
 		OpsGenieAPIURL: switchOpsgenieRegion(),
@@ -373,7 +373,7 @@ func executeHandler(event *types.Event) error {
 }
 
 // createIncident func create an alert in OpsGenie
-func createIncident(alertClient *alert.Client, event *types.Event) error {
+func createIncident(alertClient *alert.Client, event *corev2.Event) error {
 	var (
 		note string
 		err  error
@@ -418,7 +418,7 @@ func createIncident(alertClient *alert.Client, event *types.Event) error {
 }
 
 // getAlert func get a alert using an alias.
-func getAlert(alertClient *alert.Client, event *types.Event) (string, error) {
+func getAlert(alertClient *alert.Client, event *corev2.Event) (string, error) {
 	_, alias, _ := parseEventKeyTags(event)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -435,7 +435,7 @@ func getAlert(alertClient *alert.Client, event *types.Event) (string, error) {
 }
 
 // closeAlert func close an alert if status == 0
-func closeAlert(alertClient *alert.Client, event *types.Event, alertid string) error {
+func closeAlert(alertClient *alert.Client, event *corev2.Event, alertid string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	closeResult, err := alertClient.Close(ctx, &alert.CloseAlertRequest{
@@ -455,7 +455,7 @@ func closeAlert(alertClient *alert.Client, event *types.Event, alertid string) e
 }
 
 // getNote func creates a note with whole event in json format
-func getNote(event *types.Event) (string, error) {
+func getNote(event *corev2.Event) (string, error) {
 	eventJSON, err := json.Marshal(event)
 	if err != nil {
 		return "", err
