@@ -8,6 +8,7 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 ## Unreleased
 ## Changed
 - Update to use sensu-plugin-sdk 0.16
+- Update to latest opsgenie sdk 1.2.12
 
 ## [0.9.0] - 2021-01-27
 

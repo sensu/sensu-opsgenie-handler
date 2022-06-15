@@ -37,6 +37,7 @@ type Config struct {
 	DescriptionTemplate string
 	Actions             []string
 	TagsTemplates       []string
+	ApiUrl              string
 }
 
 var (
@@ -336,6 +337,9 @@ func stringInSlice(a string, list []string) bool {
 // switchOpsgenieRegion func
 func switchOpsgenieRegion() client.ApiUrl {
 	var region client.ApiUrl
+	if len(plugin.ApiUrl) > 0 {
+		return client.ApiUrl(plugin.ApiUrl)
+	}
 	apiRegionLowCase := strings.ToLower(plugin.APIRegion)
 	switch apiRegionLowCase {
 	case "eu":
