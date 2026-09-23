@@ -1,6 +1,13 @@
 name: Go Lint
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -11,6 +18,8 @@ jobs:
         os: [ubuntu-latest]
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Run golangci-lint
-      uses: actions-contrib/golangci-lint@v2
+      uses: golangci/golangci-lint-action@v7
+      with:
+        version: v2.13.2

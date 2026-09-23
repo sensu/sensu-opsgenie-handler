@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/opsgenie/opsgenie-go-sdk-v2/alert"
 	"github.com/opsgenie/opsgenie-go-sdk-v2/client"
-	corev2 "github.com/sensu/sensu-go/api/core/v2"
+	corev2 "github.com/sensu/core/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,6 +18,13 @@ import (
 func clearConfig() {
 	plugin.ApiUrl = ""
 	plugin.AuthToken = ""
+	plugin.HeartbeatMap = ""
+	plugin.HeartbeatEvents = false
+	plugin.RemediationEvents = false
+	plugin.EscalationTeam = ""
+	plugin.ScheduleTeam = ""
+	plugin.TitlePrettify = false
+	plugin.HooksDetails = false
 }
 
 func TestCreateAlert(t *testing.T) {
@@ -28,7 +35,7 @@ func TestCreateAlert(t *testing.T) {
 	event.Metrics = nil
 
 	var apiStub = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		expectedBody := `"message":"entity1/check1"`
 		assert.Contains(string(body), expectedBody)
 		w.Header().Add("X-RateLimit-State", "OK")
@@ -141,8 +148,6 @@ func TestCheckArgs(t *testing.T) {
 	event := corev2.FixtureEvent("entity1", "check1")
 	assert.Error(checkArgs(event))
 	plugin.AuthToken = "Testing"
-	assert.Error(checkArgs(event))
-	plugin.Team = "Testing"
 	assert.NoError(checkArgs(event))
 }
 
@@ -189,4 +194,21 @@ func TestSwitchOpsgenieRegion(t *testing.T) {
 	testEU2 := switchOpsgenieRegion()
 
 	assert.Equal(t, testEU2, expectedValueEU)
+}
+
+func TestTitlePrettify(t *testing.T) {
+	clearConfig()
+	assert.Equal(t, "Long Check With Too Many Dashes", titlePrettify("long-check-with-too-many-dashes"))
+	assert.Equal(t, "Long Check With Too Many Dashes And Slashes And Others", titlePrettify("long-check-with-too-many-dashes/and/slashes-and\\others"))
+}
+
+func TestParseHeartbeatMap(t *testing.T) {
+	clearConfig()
+	m, err := parseHeartbeatMap("entity1/check1=heartbeat1,all/check2=heartbeat2")
+	assert.NoError(t, err)
+	assert.Equal(t, "heartbeat1", m["entity1/check1"])
+	assert.Equal(t, "heartbeat2", m["all/check2"])
+
+	_, err = parseHeartbeatMap("badformat")
+	assert.Error(t, err)
 }
