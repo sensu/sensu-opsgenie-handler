@@ -308,7 +308,7 @@ func parseDescription(event *corev2.Event) (description string) {
 		return ""
 	}
 	// allow newlines to get expanded
-	description = strings.Replace(description, `\n`, "\n", -1)
+	description = strings.ReplaceAll(description, `\n`, "\n")
 	return trim(description, plugin.DescriptionLimit)
 }
 
@@ -357,7 +357,7 @@ func parseDetails(event *corev2.Event) map[string]string {
 	if plugin.WithAnnotations {
 		if event.Check.Annotations != nil {
 			for key, value := range event.Check.Annotations {
-				if !strings.Contains(key, plugin.PluginConfig.Keyspace) {
+				if !strings.Contains(key, plugin.Keyspace) {
 					checkKey := fmt.Sprintf("%s_annotation_%s", "check", key)
 					details[checkKey] = value
 				}
@@ -365,7 +365,7 @@ func parseDetails(event *corev2.Event) map[string]string {
 		}
 		if event.Entity.Annotations != nil {
 			for key, value := range event.Entity.Annotations {
-				if !strings.Contains(key, plugin.PluginConfig.Keyspace) {
+				if !strings.Contains(key, plugin.Keyspace) {
 					entityKey := fmt.Sprintf("%s_annotation_%s", "entity", key)
 					details[entityKey] = value
 				}
@@ -688,5 +688,9 @@ func titlePrettify(s string) string {
 	title := strings.ReplaceAll(s, "-", " ")
 	title = strings.ReplaceAll(title, "\\", " ")
 	title = strings.ReplaceAll(title, "/", " ")
-	return strings.Title(title)
+	words := strings.Fields(title)
+	for i, w := range words {
+		words[i] = strings.ToUpper(w[:1]) + w[1:]
+	}
+	return strings.Join(words, " ")
 }

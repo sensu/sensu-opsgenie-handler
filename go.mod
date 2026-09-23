@@ -1,6 +1,6 @@
 module github.com/nixwiz/sensu-opsgenie-handler
 
-go 1.18
+go 1.27
 
 require (
 	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.23

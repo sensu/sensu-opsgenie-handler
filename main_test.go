@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -35,7 +35,7 @@ func TestCreateAlert(t *testing.T) {
 	event.Metrics = nil
 
 	var apiStub = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		expectedBody := `"message":"entity1/check1"`
 		assert.Contains(string(body), expectedBody)
 		w.Header().Add("X-RateLimit-State", "OK")
