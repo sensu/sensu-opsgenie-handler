@@ -1,7 +1,7 @@
-[![Sensu Bonsai Asset](https://img.shields.io/badge/Bonsai-Download%20Me-brightgreen.svg?colorB=89C967&logo=sensu)](https://bonsai.sensu.io/assets/nixwiz/sensu-opsgenie-handler)
-![Go Test](https://github.com/nixwiz/sensu-opsgenie-handler/workflows/Go%20Test/badge.svg)
-![goreleaser](https://github.com/nixwiz/sensu-opsgenie-handler/workflows/goreleaser/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/nixwiz/sensu-opsgenie-handler)](https://goreportcard.com/report/github.com/nixwiz/sensu-opsgenie-handler)
+[![Sensu Bonsai Asset](https://img.shields.io/badge/Bonsai-Download-brightgreen.svg?colorB=89C967&logo=sensu)](https://bonsai.sensu.io/assets/sensu/sensu-opsgenie-handler)
+![Go Test](https://github.com/sensu/sensu-opsgenie-handler/actions/workflows/test.yml/badge.svg)
+![goreleaser](https://github.com/sensu/sensu-opsgenie-handler/actions/workflows/release.yml/badge.svg)
+![Go Lint](https://github.com/sensu/sensu-opsgenie-handler/actions/workflows/lint.yml/badge.svg)
 
 # Sensu Go OpsGenie Handler
 
@@ -35,7 +35,6 @@ This handler was inspired by [pagerduty plugin][6].
 
 ### Help output
 
-Help:
 ```
 The Sensu Go OpsGenie handler for incident management
 
@@ -210,13 +209,13 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 
 [1]: https://github.com/sensu/sensu-go
 [2]: https://www.opsgenie.com/ 
-[3]: https://docs.sensu.io/sensu-go/5.0/reference/handlers/#how-do-sensu-handlers-work
-[4]: https://github.com/nixwiz/sensu-opsgenie-handler/releases
+[3]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-process/handlers/
+[4]: https://github.com/sensu/sensu-opsgenie-handler/releases
 [5]: https://docs.opsgenie.com/docs/sensu-integration#section-add-sensu-integration-in-opsgenie
 [6]: https://github.com/sensu/sensu-pagerduty-handler
-[7]: https://docs.sensu.io/sensu-go/latest/reference/assets/
+[7]: https://docs.sensu.io/sensu-go/latest/plugins/assets/
 [8]: https://bonsai.sensu.io/
 [9]: https://github.com/sensu-plugins/sensu-plugins-opsgenie
-[10]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/
-[11]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/#use-env-for-secrets-management
-[12]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-process/handler-templates/
+[10]: https://docs.sensu.io/sensu-go/latest/operations/manage-secrets/
+[11]: https://docs.sensu.io/sensu-go/latest/operations/manage-secrets/secrets-management/#use-env-for-secrets-management
+[12]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-process/handler-templates/#template-syntax-and-format
