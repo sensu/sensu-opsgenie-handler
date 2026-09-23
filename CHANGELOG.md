@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.0.0] - 2026-09-23
 ### Added
 - `--escalation-team` and `--schedule-team` flags to set OpsGenie escalation/schedule responders independently from `--team`
 - `--addHooksToDetails` flag to include check hook labels/command/output in the OpsGenie details
@@ -15,10 +15,13 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - `--team` is no longer required; omit it to rely solely on `--escalation-team`/`--schedule-team`
-- Modernized `.github/workflows/release.yml` action versions (checkout@v4, setup-go@v5, goreleaser-action@v6)
 - Update to use sensu-plugin-sdk 0.19 (migrated Event type import to `github.com/sensu/core/v2`)
 - Update to latest opsgenie sdk 1.2.23
 - Update testify to 1.12.1
+- Update to Go 1.27
+- Modernized CI: `checkout`/`setup-go`/`goreleaser-action` to current majors, replaced a dead/blocked third-party
+  golangci-lint action with the official `golangci-lint-action` (lint had been silently never running), fixed
+  duplicate Lint CI runs on PR branches, and added concurrency cancellation for superseded runs
 
 ## [0.9.0] - 2021-01-27
 
