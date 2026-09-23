@@ -50,6 +50,8 @@ Available Commands:
 Flags:
   -a, --auth string                  The OpsGenie V2 API authentication token, use default from OPSGENIE_AUTHTOKEN env var
   -t, --team string                  The OpsGenie V2 API Team, use default from OPSGENIE_TEAM env var
+      --escalation-team string       The OpsGenie Escalation Responders Team, use default from OPSGENIE_ESCALATION_TEAM env var
+      --schedule-team string         The OpsGenie Schedule Responders Team, use default from OPSGENIE_SCHEDULE_TEAM env var
   -r, --region string                The OpsGenie API Region (us or eu), use default from OPSGENIE_REGION env var (default "us")
   -p, --priority string              The OpsGenie Alert Priority, use default from OPSGENIE_PRIORITY env var (default "P3")
   -A, --actions strings              The OpsGenie custom actions to assign to the event
@@ -59,10 +61,15 @@ Flags:
   -l, --messageLimit int             The maximum length of the message field (default 130)
   -i, --includeEventInNote           Include the event JSON in the payload sent to OpsGenie
   -F, --fullDetails                  Include the more details to send to OpsGenie like proxy_entity_name, occurrences and agent details arch and os
+      --addHooksToDetails            Include the checks.hooks in details to send to OpsGenie
+      --titlePrettify                Remove all -, /, \ and apply strings.Title in message title
   -w, --withAnnotations              Include the event.metadata.Annotations in details to send to OpsGenie
   -W, --withLabels                   Include the event.metadata.Labels in details to send to OpsGenie
   -T, --tagTemplate strings          The template to assign for the incident in OpsGenie (default [{{.Entity.Name}},{{.Check.Name}},{{.Entity.Namespace}},{{.Entity.EntityClass}}])
   -s, --sensuDashboard string        The OpsGenie Handler will use it to create a source Sensu Dashboard URL. Use OPSGENIE_SENSU_DASHBOARD. Example: http://sensu-dashboard.example.local/c/~/n
+      --remediation-events           Enable Remediation Events to send check.output to opsgenie using the event alias, instead of creating/closing alerts
+      --heartbeat                    Enable Heartbeat Events
+      --heartbeat-map string         Map of entity/check to heartbeat name, e.g. entity/check=heartbeat_name,entity1/check1=heartbeat1. Use 'all' in place of entity or check to match any.
   -h, --help                         help for sensu-opsgenie-handler
 
 Use "sensu-opsgenie-handler [command] --help" for more information about a command.

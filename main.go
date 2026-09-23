@@ -9,6 +9,7 @@ import (
 
 	"github.com/opsgenie/opsgenie-go-sdk-v2/alert"
 	"github.com/opsgenie/opsgenie-go-sdk-v2/client"
+	"github.com/opsgenie/opsgenie-go-sdk-v2/heartbeat"
 	corev2 "github.com/sensu/core/v2"
 	"github.com/sensu/sensu-plugin-sdk/sensu"
 	"github.com/sensu/sensu-plugin-sdk/templates"
@@ -24,6 +25,10 @@ type Config struct {
 	sensu.PluginConfig
 	IncludeEventInNote  bool
 	FullDetails         bool
+	HooksDetails        bool
+	TitlePrettify       bool
+	RemediationEvents   bool
+	HeartbeatEvents     bool
 	WithAnnotations     bool
 	WithLabels          bool
 	MessageLimit        int
@@ -31,6 +36,8 @@ type Config struct {
 	APIRegion           string
 	AuthToken           string
 	Team                string
+	EscalationTeam      string
+	ScheduleTeam        string
 	Priority            string
 	SensuDashboard      string
 	MessageTemplate     string
@@ -38,6 +45,7 @@ type Config struct {
 	Actions             []string
 	TagsTemplates       []string
 	ApiUrl              string
+	HeartbeatMap        string
 }
 
 var (
@@ -77,6 +85,24 @@ var (
 			Default:   "",
 			Usage:     "The OpsGenie V2 API Team, use default from OPSGENIE_TEAM env var",
 			Value:     &plugin.Team,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:      "escalation-team",
+			Env:       "OPSGENIE_ESCALATION_TEAM",
+			Argument:  "escalation-team",
+			Shorthand: "",
+			Default:   "",
+			Usage:     "The OpsGenie Escalation Responders Team, use default from OPSGENIE_ESCALATION_TEAM env var",
+			Value:     &plugin.EscalationTeam,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:      "schedule-team",
+			Env:       "OPSGENIE_SCHEDULE_TEAM",
+			Argument:  "schedule-team",
+			Shorthand: "",
+			Default:   "",
+			Usage:     "The OpsGenie Schedule Responders Team, use default from OPSGENIE_SCHEDULE_TEAM env var",
+			Value:     &plugin.ScheduleTeam,
 		},
 		&sensu.PluginConfigOption[string]{
 			Path:      "sensuDashboard",
@@ -177,6 +203,24 @@ var (
 			Usage:     "Include the more details to send to OpsGenie like proxy_entity_name, occurrences and agent details arch and os",
 			Value:     &plugin.FullDetails,
 		},
+		&sensu.PluginConfigOption[bool]{
+			Path:      "addHooksToDetails",
+			Env:       "",
+			Argument:  "addHooksToDetails",
+			Shorthand: "",
+			Default:   false,
+			Usage:     "Include the checks.hooks in details to send to OpsGenie",
+			Value:     &plugin.HooksDetails,
+		},
+		&sensu.PluginConfigOption[bool]{
+			Path:      "titlePrettify",
+			Env:       "",
+			Argument:  "titlePrettify",
+			Shorthand: "",
+			Default:   false,
+			Usage:     "Remove all -, /, \\ and apply strings.Title in message title",
+			Value:     &plugin.TitlePrettify,
+		},
 		&sensu.SlicePluginConfigOption[string]{
 			Path:      "tagTemplate",
 			Env:       "",
@@ -185,6 +229,33 @@ var (
 			Default:   []string{"{{.Entity.Name}}", "{{.Check.Name}}", "{{.Entity.Namespace}}", "{{.Entity.EntityClass}}"},
 			Usage:     "The template to assign for the incident in OpsGenie",
 			Value:     &plugin.TagsTemplates,
+		},
+		&sensu.PluginConfigOption[bool]{
+			Path:      "remediation-events",
+			Env:       "",
+			Argument:  "remediation-events",
+			Shorthand: "",
+			Default:   false,
+			Usage:     "Enable Remediation Events to send check.output to opsgenie using the event alias, instead of creating/closing alerts",
+			Value:     &plugin.RemediationEvents,
+		},
+		&sensu.PluginConfigOption[bool]{
+			Path:      "heartbeat",
+			Env:       "",
+			Argument:  "heartbeat",
+			Shorthand: "",
+			Default:   false,
+			Usage:     "Enable Heartbeat Events",
+			Value:     &plugin.HeartbeatEvents,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:      "heartbeat-map",
+			Env:       "",
+			Argument:  "heartbeat-map",
+			Shorthand: "",
+			Default:   "",
+			Usage:     "Map of entity/check to heartbeat name, e.g. entity/check=heartbeat_name,entity1/check1=heartbeat1. Use 'all' in place of entity or check to match any.",
+			Value:     &plugin.HeartbeatMap,
 		},
 	}
 )
@@ -198,9 +269,12 @@ func checkArgs(_ *corev2.Event) error {
 	if len(plugin.AuthToken) == 0 {
 		return fmt.Errorf("authentication token is empty")
 	}
-	if len(plugin.Team) == 0 {
-		return fmt.Errorf("team is empty")
+	if plugin.HeartbeatEvents && plugin.RemediationEvents {
+		return fmt.Errorf("cannot enable both --heartbeat and --remediation-events")
 	}
+	// if len(plugin.Team) == 0 {
+	// 	return fmt.Errorf("team is empty")
+	// }
 	return nil
 }
 
@@ -220,6 +294,9 @@ func parseEventKeyTags(event *corev2.Event) (title string, alias string, tags []
 			return "", "", []string{}
 		}
 		tags = append(tags, tag)
+	}
+	if plugin.TitlePrettify {
+		title = titlePrettify(title)
 	}
 	return trim(title, plugin.MessageLimit), alias, tags
 }
@@ -257,6 +334,23 @@ func parseDetails(event *corev2.Event) map[string]string {
 			details["platform"] = event.Entity.System.GetPlatform()
 			details["platform_family"] = event.Entity.System.GetPlatformFamily()
 			details["platform_version"] = event.Entity.System.GetPlatformVersion()
+		}
+	}
+
+	if plugin.HooksDetails {
+		for _, hook := range event.Check.Hooks {
+			detailNameLabel := fmt.Sprintf("hooks_%s_label", hook.Name)
+			detailNameCommand := fmt.Sprintf("hooks_%s_command", hook.Name)
+			detailNameOutput := fmt.Sprintf("hooks_%s_output", hook.Name)
+			for key, value := range hook.Labels {
+				details[fmt.Sprintf("%s_%s", detailNameLabel, key)] = value
+			}
+			if hook.Command != "" {
+				details[detailNameCommand] = hook.Command
+			}
+			if hook.Output != "" {
+				details[detailNameOutput] = hook.Output
+			}
 		}
 	}
 
@@ -361,6 +455,14 @@ func executeHandler(event *corev2.Event) error {
 		return fmt.Errorf("failed to create opsgenie client: %s", err)
 	}
 
+	if plugin.RemediationEvents {
+		return handleRemediationEvent(alertClient, event)
+	}
+
+	if plugin.HeartbeatEvents {
+		return handleHeartbeatEvent(event)
+	}
+
 	if event.Check.Status != 0 {
 		return createIncident(alertClient, event)
 	}
@@ -374,6 +476,106 @@ func executeHandler(event *corev2.Event) error {
 	}
 
 	return nil
+}
+
+// handleRemediationEvent sends check.output as a note to an existing alert, keyed by the event alias,
+// instead of creating/closing an alert. Non-alerting events are ignored.
+func handleRemediationEvent(alertClient *alert.Client, event *corev2.Event) error {
+	if event.Check.Status != 0 {
+		fmt.Printf("not sending alert because --remediation-events is enabled %s/%s\n", event.Entity.Name, event.Check.Name)
+		return nil
+	}
+	hasAlert, _ := getAlert(alertClient, event)
+	if hasAlert == notFound {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	notes := fmt.Sprintf("%s ", event.Check.Output)
+	updateResult, err := alertClient.AddNote(ctx, &alert.AddNoteRequest{
+		IdentifierType:  alert.ALERTID,
+		IdentifierValue: hasAlert,
+		Source:          source,
+		Note:            notes,
+	})
+	if err != nil {
+		fmt.Printf("Not updated: %s\n", err)
+		return nil
+	}
+	fmt.Printf("RequestID %s to update %s\n", hasAlert, updateResult.RequestId)
+	return nil
+}
+
+// handleHeartbeatEvent pings an OpsGenie heartbeat matching this event's entity/check, using
+// --heartbeat-map to resolve the heartbeat name. "all" may be used in place of entity or check
+// to match any value. Non-alerting events are ignored.
+func handleHeartbeatEvent(event *corev2.Event) error {
+	if event.Check.Status != 0 {
+		fmt.Printf("not sending alert because --heartbeat is enabled %s/%s\n", event.Entity.Name, event.Check.Name)
+		return nil
+	}
+	if plugin.HeartbeatMap == "" {
+		return nil
+	}
+	heartbeats, err := parseHeartbeatMap(plugin.HeartbeatMap)
+	if err != nil {
+		return err
+	}
+
+	entityCheck := fmt.Sprintf("%s/%s", event.Entity.Name, event.Check.Name)
+	if name := heartbeats[entityCheck]; name != "" {
+		return pingHeartbeat(name)
+	}
+	entityAll := fmt.Sprintf("%s/all", event.Entity.Name)
+	if name := heartbeats[entityAll]; name != "" {
+		return pingHeartbeat(name)
+	}
+	allCheck := fmt.Sprintf("all/%s", event.Check.Name)
+	if name := heartbeats[allCheck]; name != "" {
+		return pingHeartbeat(name)
+	}
+	if name := heartbeats["all/all"]; name != "" {
+		return pingHeartbeat(name)
+	}
+	fmt.Println("not pinging any heartbeat because entity/check defined do not match")
+	return nil
+}
+
+// pingHeartbeat pings the named OpsGenie heartbeat
+func pingHeartbeat(name string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	heartbeatClient, err := heartbeat.NewClient(&client.Config{
+		ApiKey:         plugin.AuthToken,
+		OpsGenieAPIURL: switchOpsgenieRegion(),
+	})
+	if err != nil {
+		return err
+	}
+	result, err := heartbeatClient.Ping(ctx, name)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Heartbeat %s was requested with %s and response time %v\n", name, result.RequestId, result.ResponseTime)
+	return nil
+}
+
+// parseHeartbeatMap parses a --heartbeat-map value like
+// "entity/check=heartbeat_name,entity1/check1=heartbeat1" into a map keyed by "entity/check".
+func parseHeartbeatMap(s string) (map[string]string, error) {
+	heartbeats := make(map[string]string)
+	for _, pair := range strings.Split(s, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		parts := strings.SplitN(pair, "=", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return nil, fmt.Errorf("heartbeat-map wrong format: entity/check=heartbeat_name")
+		}
+		heartbeats[parts[0]] = parts[1]
+	}
+	return heartbeats, nil
 }
 
 // createIncident func create an alert in OpsGenie
@@ -390,9 +592,15 @@ func createIncident(alertClient *alert.Client, event *corev2.Event) error {
 		}
 	}
 
-	teams := []alert.Responder{
-		{Type: alert.EscalationResponder, Name: plugin.Team},
-		{Type: alert.ScheduleResponder, Name: plugin.Team},
+	teams := []alert.Responder{}
+	if plugin.EscalationTeam != "" {
+		teams = append(teams, alert.Responder{Type: alert.EscalationResponder, Name: plugin.EscalationTeam})
+	}
+	if plugin.ScheduleTeam != "" {
+		teams = append(teams, alert.Responder{Type: alert.ScheduleResponder, Name: plugin.ScheduleTeam})
+	}
+	if plugin.Team != "" {
+		teams = append(teams, alert.Responder{Type: alert.TeamResponder, Name: plugin.Team})
 	}
 	title, alias, tags := parseEventKeyTags(event)
 
@@ -473,4 +681,12 @@ func trim(s string, n int) string {
 		return s[:n]
 	}
 	return s
+}
+
+// titlePrettify removes -, /, and \ from a string and title-cases it
+func titlePrettify(s string) string {
+	title := strings.ReplaceAll(s, "-", " ")
+	title = strings.ReplaceAll(title, "\\", " ")
+	title = strings.ReplaceAll(title, "/", " ")
+	return strings.Title(title)
 }

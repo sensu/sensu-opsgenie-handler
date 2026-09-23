@@ -6,9 +6,19 @@ and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-## Changed
-- Update to use sensu-plugin-sdk 0.16
-- Update to latest opsgenie sdk 1.2.12
+### Added
+- `--escalation-team` and `--schedule-team` flags to set OpsGenie escalation/schedule responders independently from `--team`
+- `--addHooksToDetails` flag to include check hook labels/command/output in the OpsGenie details
+- `--titlePrettify` flag to strip `-`, `/`, `\` and title-case the alert message
+- `--heartbeat`/`--heartbeat-map` flags to ping an OpsGenie heartbeat instead of creating/closing alerts
+- `--remediation-events` flag to send check output as a note to an existing alert instead of creating/closing alerts
+
+### Changed
+- `--team` is no longer required; omit it to rely solely on `--escalation-team`/`--schedule-team`
+- Modernized `.github/workflows/release.yml` action versions (checkout@v4, setup-go@v5, goreleaser-action@v6)
+- Update to use sensu-plugin-sdk 0.19 (migrated Event type import to `github.com/sensu/core/v2`)
+- Update to latest opsgenie sdk 1.2.23
+- Update testify to 1.12.1
 
 ## [0.9.0] - 2021-01-27
 

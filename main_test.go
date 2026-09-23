@@ -18,6 +18,13 @@ import (
 func clearConfig() {
 	plugin.ApiUrl = ""
 	plugin.AuthToken = ""
+	plugin.HeartbeatMap = ""
+	plugin.HeartbeatEvents = false
+	plugin.RemediationEvents = false
+	plugin.EscalationTeam = ""
+	plugin.ScheduleTeam = ""
+	plugin.TitlePrettify = false
+	plugin.HooksDetails = false
 }
 
 func TestCreateAlert(t *testing.T) {
@@ -141,8 +148,6 @@ func TestCheckArgs(t *testing.T) {
 	event := corev2.FixtureEvent("entity1", "check1")
 	assert.Error(checkArgs(event))
 	plugin.AuthToken = "Testing"
-	assert.Error(checkArgs(event))
-	plugin.Team = "Testing"
 	assert.NoError(checkArgs(event))
 }
 
@@ -189,4 +194,21 @@ func TestSwitchOpsgenieRegion(t *testing.T) {
 	testEU2 := switchOpsgenieRegion()
 
 	assert.Equal(t, testEU2, expectedValueEU)
+}
+
+func TestTitlePrettify(t *testing.T) {
+	clearConfig()
+	assert.Equal(t, "Long Check With Too Many Dashes", titlePrettify("long-check-with-too-many-dashes"))
+	assert.Equal(t, "Long Check With Too Many Dashes And Slashes And Others", titlePrettify("long-check-with-too-many-dashes/and/slashes-and\\others"))
+}
+
+func TestParseHeartbeatMap(t *testing.T) {
+	clearConfig()
+	m, err := parseHeartbeatMap("entity1/check1=heartbeat1,all/check2=heartbeat2")
+	assert.NoError(t, err)
+	assert.Equal(t, "heartbeat1", m["entity1/check1"])
+	assert.Equal(t, "heartbeat2", m["all/check2"])
+
+	_, err = parseHeartbeatMap("badformat")
+	assert.Error(t, err)
 }
